@@ -1,6 +1,6 @@
 # 0002 — World grid & terrain rendering
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M1 — World Foundation
 - **Depends on:** 0001
 
@@ -22,11 +22,21 @@ Art direction is decided: 2D, top-down, tile-grid based (`docs/roadmap.md`). God
 - Terrain that changes at runtime (e.g. chopped forest tile reverting to grass) — that's owned by the building/resource tickets that consume terrain (0009), this ticket only needs to expose the query API they'll use.
 
 ## Acceptance criteria
-- [ ] A `TileSet` with the listed terrain types exists and renders correctly in the editor and at runtime.
-- [ ] A single map scene loads and displays a mix of all terrain types.
-- [ ] A script/autoload exposes: `is_walkable(grid_pos)`, `is_buildable(grid_pos)`, `world_to_grid(world_pos)`, `grid_to_world(grid_pos)`, and map bounds.
-- [ ] Walkability/buildability rules are correct per tile type (water impassable, rock impassable+unbuildable, grass/forest buildable where sensible).
+- [x] A `TileSet` with the listed terrain types exists and renders correctly in the editor and at runtime. (`resources/terrain_tileset.tres`, placeholder atlas `assets/art/terrain_atlas.png`; the atlas loads at runtime with all four tiles resolving. Not visually inspected in the editor.)
+- [x] A single map scene loads and displays a mix of all terrain types. (`scenes/world/world.tscn`; a headless check found grass 2335, forest 834, water 693, rock 234.)
+- [x] A script/autoload exposes: `is_walkable(grid_pos)`, `is_buildable(grid_pos)`, `world_to_grid(world_pos)`, `grid_to_world(grid_pos)`, and map bounds. (`scripts/world/world_grid.gd`, `class_name WorldGrid`, attached to the `World` root.)
+- [x] Walkability/buildability rules are correct per tile type (water impassable, rock impassable+unbuildable, grass/forest buildable where sensible).
+
+## Decisions
+- Map: 64x64 tiles, 32px per tile, generated at runtime from a fixed seed with two `FastNoiseLite` fields (elevation for water/rock, moisture for forest). The map is not painted in the editor, so the editor shows an empty `TileMapLayer`.
+- Terrain rules (custom data on the TileSet):
+  - grass: walkable, buildable
+  - forest: walkable, not buildable (trees occupy the tile; clearing it is owned by 0009)
+  - water: impassable, not buildable
+  - rock: impassable, not buildable
+- Forest is a terrain tile, not a separate object. This keeps 0009's harvesting model open: it can convert the tile on harvest, which this API supports.
+- Out-of-bounds and empty cells report not walkable and not buildable.
 
 ## Open questions
-- Map size for the MVP — pick something small enough to iterate fast (e.g. 48x48–64x64) and revisit once performance/scale matters.
-- Whether forest tiles are single-tile resource nodes or whether trees are separate objects placed on top of grass tiles (affects 0009's harvesting model) — recommend deciding in 0009 rather than here, but the terrain API should not preclude either.
+- Map size for the MVP is 64x64; revisit once performance or scale matters.
+- Whether forest tiles are single-tile resource nodes or trees are separate objects is still open; decide in 0009.
