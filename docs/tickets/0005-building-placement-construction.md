@@ -1,6 +1,6 @@
 # 0005 — Building placement & construction system
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M2 — Core Simulation Loop
 - **Depends on:** 0002, 0003, 0004
 
@@ -24,10 +24,22 @@ This is one of the two core interaction loops in Banished-likes (the other being
 - Multiple simultaneous construction sites queued with priority (fine to let the player queue several; no need for a priority system yet).
 
 ## Acceptance criteria
-- [ ] Player can open a building menu (can be a stub list for now; full UI is 0012), pick a building, see a valid/invalid placement preview, and confirm.
-- [ ] Confirming deducts the correct resource cost and fails gracefully (no deduction, no placement) if the stockpile can't afford it.
-- [ ] A construction site appears immediately, and becomes the finished building after its construction condition is met.
-- [ ] Invalid placements (occupied tile, non-buildable terrain, out of bounds) are rejected with visible feedback.
+- [x] Player can open a building menu (can be a stub list for now; full UI is 0012), pick a building, see a valid/invalid placement preview, and confirm. (Stub: `B` toggles placing, `Tab` cycles the list, left-click confirms, `Esc`/right-click cancels.)
+- [x] Confirming deducts the correct resource cost and fails gracefully (no deduction, no placement) if the stockpile can't afford it.
+- [x] A construction site appears immediately, and becomes the finished building after its construction condition is met.
+- [x] Invalid placements (occupied tile, non-buildable terrain, out of bounds) are rejected with visible feedback. (Red ghost plus a reason line in the UI label.)
+
+## Decisions
+- `BuildingDef` resource (`scripts/buildings/building_def.gd`): `id`, `display_name`, `footprint` (tiles), `cost` (`ResourceStockpile.Type` to int), `build_time` (seconds). Instance: `resources/buildings/storage_barn.tres`, a 2x2 stub with cost 10 wood and 5 s build time. It is a placeholder for the MVP buildings in 0009.
+- Footprint is anchored at its top-left cell, which is the cell under the cursor.
+- Validation order: outside map, then occupied, then terrain not buildable, then not enough resources. The first failure is the reason shown.
+- Construction sites and finished buildings are impassable and unbuildable. Occupancy lives in `WorldGrid` (`set_occupied`), and walkability and buildability now include it.
+- Construction is time-based (automatic completion). Settler labor is wired in with 0008.
+- On completion, the `ConstructionSite` node is replaced by a `Building` node on the same cells. The occupancy does not change, so pathfinding sees no difference.
+- Multiple sites may be queued. No priority.
 
 ## Open questions
-- Does construction require a settler to physically walk there and work (ties into 0006/0008), or is it tick-based/automatic for MVP? Recommend: automatic time-based completion for this ticket, then wire it to actual settler labor once 0008 (job assignment) exists, to avoid a circular dependency between 0005 and 0008.
+- Whether construction should require a settler on site (0008) once that exists.
+- Settlers standing on a tile do not block placement yet. Revisit in 0006 once pathfinding can start from an occupied cell.
+
+- Does construction require a settler to physically walk there and work (ties into 0006/0008), or is it tick-based/automatic for MVP? Decided here: automatic time-based completion for now. Wire it to settler labor once 0008 exists.

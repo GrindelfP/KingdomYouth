@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0qwimmso5dir"]
+[gd_scene load_steps=5 format=3 uid="uid://b0qwimmso5dir"]
 
 [ext_resource type="Script" uid="uid://bixt1yxib3b5a" path="res://scripts/world/world_grid.gd" id="1_grid"]
 [ext_resource type="TileSet" path="res://resources/terrain_tileset.tres" id="2_tiles"]
 [ext_resource type="Script" uid="uid://dj5rw627i0hig" path="res://scripts/world/camera_controller.gd" id="3_camera"]
+[ext_resource type="Script" path="res://scripts/buildings/build_controller.gd" id="4_build"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_grid")
@@ -12,3 +13,14 @@ tile_set = ExtResource("2_tiles")
 
 [node name="Camera" type="Camera2D" parent="."]
 script = ExtResource("3_camera")
+
+[node name="Buildings" type="Node2D" parent="."]
+script = ExtResource("4_build")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Feedback" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 800.0
+offset_bottom = 42.0
