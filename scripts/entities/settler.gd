@@ -14,6 +14,12 @@ var _last_cell := Vector2i.ZERO
 var _destination := Vector2i.ZERO
 var _path: Array[Vector2i] = []
 var _moving := false
+var needs: Needs
+
+
+func _ready() -> void:
+	needs = Needs.new()
+	add_child(needs)
 
 
 func setup(world: WorldGrid, pathfinder: GridPathfinder, grid_pos: Vector2i) -> void:

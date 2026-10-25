@@ -1,6 +1,6 @@
 # 0007 — Settler needs system (hunger, rest, warmth)
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M2 — Core Simulation Loop
 - **Depends on:** 0006, 0004
 
@@ -22,10 +22,19 @@ This is what makes the settlement a system to manage rather than a diorama. For 
 - Per-settler food preferences.
 
 ## Acceptance criteria
-- [ ] Each settler's hunger rises over time and decreases when they eat.
-- [ ] Eating consumes from the global food stockpile (0004); if the stockpile is empty, the settler cannot reduce hunger and the game should make this visibly consequential (e.g. eventually triggers the starvation state).
-- [ ] A defined, observable consequence exists for hunger reaching its maximum (at minimum: a signal other systems — including 0010's death logic — can listen to).
-- [ ] Needs updates are batched/ticked, not naively running full logic every physics frame for every settler.
+- [x] Each settler's hunger rises over time and decreases when they eat. (+0.7/s; a meal at hunger 60+ restores 60.)
+- [x] Eating consumes from the global food stockpile (0004); if the stockpile is empty, the settler cannot reduce hunger and the game should make this visibly consequential (e.g. eventually triggers the starvation state). (Empty stock: hunger caps at 100, `starving` fires, health drains at 1/s.)
+- [x] A defined, observable consequence exists for hunger reaching its maximum (at minimum: a signal other systems — including 0010's death logic — can listen to). (`starving` once on reaching 100, then health drain; `died` when health reaches 0.)
+- [x] Needs updates are batched/ticked, not naively running full logic every physics frame for every settler. (`TICK_INTERVAL` = 1 s; `ticked` signal fires per tick.)
+
+## Decisions
+- `Needs` is a child `Node` of each `Settler` (`scripts/entities/needs.gd`). It ticks once per second from `_process` accumulation.
+- Fields: `hunger` 0 to 100 (rises), `rest` 0 to 100 (drains awake, recovers while `at_home`), `warmth` (tracked, not enforced until 0011), `health` 0 to 100.
+- Eating is instant and autonomous when `hunger >= 60` and food is in stock. It costs one food and restores 60. No walking, per the ticket.
+- Interruption signal: `hunger_critical` fires when hunger reaches 85 (0008 uses `is_critical()` to pause work).
+- Starvation at hunger 100: `starving` fires once, health drains 1/s. Health regenerates 0.5/s when sheltered and not starving.
+- Homelessness (`sheltered = false`) drains health at 0.2/s. Housing (0010) sets `sheltered` and `at_home`.
+- `died` fires once when health reaches 0. 0010 removes the settler from the world.
 
 ## Open questions
 - Exact numeric rates (how fast hunger rises, how much one "eat" action restores) — pick placeholder values and tune by playtesting once the loop exists; not worth debating in the abstract.
