@@ -8,6 +8,7 @@ var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/woodcutters_lodge.tres"),
 	load("res://resources/buildings/farm.tres"),
 	load("res://resources/buildings/storage_barn.tres"),
+	load("res://resources/buildings/house.tres"),
 ]
 var _world: WorldGrid
 var _feedback: Label

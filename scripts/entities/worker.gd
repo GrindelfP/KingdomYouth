@@ -48,6 +48,8 @@ func resume() -> void:
 
 
 func cancel_task() -> void:
+	if _state == State.IDLE:
+		return
 	_settler.cancel_movement()
 	_state = State.IDLE
 	_target = NO_TARGET

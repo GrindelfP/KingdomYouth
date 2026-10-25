@@ -1,16 +1,36 @@
 class_name SettlerManager
 extends Node2D
 
+signal population_changed(count: int)
+
 const STARTING_SETTLER_COUNT := 5
+const POPULATION_TICK := 1.0
+const BIRTH_COOLDOWN := 45.0
+const BIRTH_MIN_FOOD := 10
+const MIN_PARENTS := 2
 
 var _world: WorldGrid
 var _pathfinder: GridPathfinder
+var _buildings: Node2D
+var _tick_accumulator := 0.0
 
 
 func _ready() -> void:
 	_world = get_parent()
 	_pathfinder = get_parent().get_node("Pathfinder")
+	_buildings = get_parent().get_node("Buildings")
 	_world.map_generated.connect(_spawn_starting_settlers)
+
+
+func _process(delta: float) -> void:
+	_tick_accumulator += delta
+	while _tick_accumulator >= POPULATION_TICK:
+		_tick_accumulator -= POPULATION_TICK
+		_population_tick(POPULATION_TICK)
+
+
+func population() -> int:
+	return _living().size()
 
 
 func _spawn_starting_settlers() -> void:
@@ -24,6 +44,73 @@ func _spawn_starting_settlers() -> void:
 				cells.append(grid_pos)
 	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.distance_squared_to(center) < b.distance_squared_to(center))
 	for i in mini(STARTING_SETTLER_COUNT, cells.size()):
-		var settler := Settler.new()
-		add_child(settler)
-		settler.setup(_world, _pathfinder, cells[i])
+		_spawn_settler(cells[i])
+
+
+func _spawn_settler(grid_pos: Vector2i) -> Settler:
+	var settler := Settler.new()
+	add_child(settler)
+	settler.setup(_world, _pathfinder, grid_pos)
+	settler.needs.died.connect(_on_settler_died.bind(settler))
+	population_changed.emit(population())
+	return settler
+
+
+func _population_tick(dt: float) -> void:
+	_assign_homeless()
+	_update_births(dt)
+
+
+func _assign_homeless() -> void:
+	for settler in _living():
+		if settler.home == null:
+			var house := _house_with_room()
+			if house:
+				settler.assign_home(house)
+
+
+func _house_with_room() -> Building:
+	var best: Building = null
+	for house in _houses():
+		if not house.has_free_housing():
+			continue
+		if best == null or house.residents.size() < best.residents.size():
+			best = house
+	return best
+
+
+func _update_births(dt: float) -> void:
+	for house in _houses():
+		house.birth_cooldown = maxf(house.birth_cooldown - dt, 0.0)
+		if house.birth_cooldown > 0.0 or not house.has_free_housing():
+			continue
+		if house.residents.size() < MIN_PARENTS or ResourceStockpile.get_amount(ResourceStockpile.Type.FOOD) < BIRTH_MIN_FOOD:
+			continue
+		var cells := house.get_access_cells()
+		if cells.is_empty():
+			continue
+		house.birth_cooldown = BIRTH_COOLDOWN
+		_spawn_settler(cells[0]).assign_home(house)
+
+
+func _on_settler_died(settler: Settler) -> void:
+	settler.worker.unassign()
+	settler.unassign_home()
+	settler.queue_free()
+	population_changed.emit(population())
+
+
+func _living() -> Array[Settler]:
+	var settlers: Array[Settler] = []
+	for child in get_children():
+		if child is Settler and not child.is_queued_for_deletion():
+			settlers.append(child as Settler)
+	return settlers
+
+
+func _houses() -> Array[Building]:
+	var houses: Array[Building] = []
+	for child in _buildings.get_children():
+		if child is Building and child.def.housing_capacity > 0:
+			houses.append(child as Building)
+	return houses
