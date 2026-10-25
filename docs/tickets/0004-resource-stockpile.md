@@ -1,6 +1,6 @@
 # 0004 — Global resource stockpile system
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M2 — Core Simulation Loop
 - **Depends on:** 0001
 
@@ -25,10 +25,16 @@ Banished-style games track a shared settlement stockpile rather than per-buildin
 - Tools/equipment resource (only add if a later ticket's buildings need it).
 
 ## Acceptance criteria
-- [ ] Autoload exposes add/remove/get for each defined resource type.
-- [ ] `resource_changed` signal fires correctly on every mutation.
-- [ ] Removing more than available is handled predictably (documented behavior, not a crash).
-- [ ] Starting amounts are configurable in one place, not magic numbers scattered in code.
+- [x] Autoload exposes add/remove/get for each defined resource type. (`ResourceStockpile` autoload, `scripts/autoload/resource_stockpile.gd`.)
+- [x] `resource_changed` signal fires correctly on every mutation. (Checked headless: fires on each successful add/remove/spend, not on failed ones.)
+- [x] Removing more than available is handled predictably (documented behavior, not a crash).
+- [x] Starting amounts are configurable in one place, not magic numbers scattered in code. (`STARTING_AMOUNTS` in the autoload.)
+
+## Decisions
+- Enum `ResourceStockpile.Type { WOOD, FOOD, STONE }` is the single resource key convention. Costs and amounts are `Dictionary` keyed by that enum.
+- Amounts are integers.
+- Insufficient funds: `remove` returns `false` and changes nothing, and emits no signal. `spend(cost)` checks the whole cost first and only deducts when all of it is affordable, so it never leaves a partial deduction.
+- `add` asserts a non-negative amount.
 
 ## Open questions
 - Single generic `food` pool vs. distinct food types (grain, meat, berries) with later-game variety — recommend starting with a single `food` pool for MVP simplicity, splitting it out once farms/hunting/fishing are actually differentiated (post-MVP).

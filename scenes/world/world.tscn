@@ -1,8 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://b0qwimmso5dir"]
 
-[ext_resource type="Script" path="res://scripts/world/world_grid.gd" id="1_grid"]
+[ext_resource type="Script" uid="uid://bixt1yxib3b5a" path="res://scripts/world/world_grid.gd" id="1_grid"]
 [ext_resource type="TileSet" path="res://resources/terrain_tileset.tres" id="2_tiles"]
-[ext_resource type="Script" path="res://scripts/world/camera_controller.gd" id="3_camera"]
+[ext_resource type="Script" uid="uid://dj5rw627i0hig" path="res://scripts/world/camera_controller.gd" id="3_camera"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_grid")

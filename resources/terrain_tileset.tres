@@ -1,6 +1,6 @@
-[gd_resource type="TileSet" load_steps=3 format=3]
+[gd_resource type="TileSet" load_steps=3 format=3 uid="uid://b1jyknmox17ev"]
 
-[ext_resource type="Texture2D" path="res://assets/art/terrain_atlas.png" id="1_atlas"]
+[ext_resource type="Texture2D" uid="uid://d24groyb43551" path="res://assets/art/terrain_atlas.png" id="1_atlas"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_terrain"]
 texture = ExtResource("1_atlas")
@@ -11,15 +11,10 @@ texture_region_size = Vector2i(32, 32)
 0:0/0/custom_data_2 = "grass"
 1:0/0 = 0
 1:0/0/custom_data_0 = true
-1:0/0/custom_data_1 = false
 1:0/0/custom_data_2 = "forest"
 2:0/0 = 0
-2:0/0/custom_data_0 = false
-2:0/0/custom_data_1 = false
 2:0/0/custom_data_2 = "water"
 3:0/0 = 0
-3:0/0/custom_data_0 = false
-3:0/0/custom_data_1 = false
 3:0/0/custom_data_2 = "rock"
 
 [resource]
