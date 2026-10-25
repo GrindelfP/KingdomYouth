@@ -1,6 +1,6 @@
 # 0001 — Project scaffolding & Godot project setup
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M0 — Project & Tooling Setup
 - **Depends on:** none
 
@@ -27,13 +27,17 @@ The repo currently has only `AGENTS.md`/`CLAUDE.md` and `docs/`. There is no `pr
 - CI/export pipeline setup.
 
 ## Acceptance criteria
-- [ ] `project.godot` exists at repo root and opens in Godot 4.4.1 without errors.
-- [ ] Folder structure above exists (even if some folders only contain a `.gitkeep`).
-- [ ] `.gitignore` excludes `.godot/` and other generated files; git status is clean after an editor session.
-- [ ] A headless run (`Godot --headless --quit`) exits cleanly.
-- [ ] Committed with `[INIT]` or `[FEATURE]` prefix per the git workflow in `CLAUDE.md`.
+- [x] `project.godot` exists at repo root and opens in Godot 4.4.1 without errors.
+- [x] Folder structure above exists (even if some folders only contain a `.gitkeep`).
+- [x] `.gitignore` excludes `.godot/` and other generated files; git status is clean after an editor session. (Verified the ignore rules; an interactive editor session was not run.)
+- [x] A headless run (`Godot --headless --quit`) exits cleanly.
+- [x] Committed with `[FEATURE]` prefix per the git workflow in `CLAUDE.md`.
+
+## Decisions
+- Renderer: Forward+ (`renderer/rendering_method="forward_plus"`), the default for this ticket. Revisit when target hardware is known.
+- The game is 2D, top-down, tile-grid based (see `docs/roadmap.md` and ticket 0002). The project is set up as a 2D project with a placeholder `scenes/main.tscn` (`Node2D` root) as the main scene.
+- Window size: 1280x720.
 
 ## Open questions
-- Forward+ vs Mobile vs Compatibility renderer — pick based on target hardware once known; default to Forward+ unless there's a reason not to.
-- Decided: the game is 2D, top-down, tile-grid based (see `docs/roadmap.md` note and ticket 0002). This ticket should set up the project in 2D mode accordingly.
+- Mobile vs Compatibility renderer — revisit once target hardware is known.
 

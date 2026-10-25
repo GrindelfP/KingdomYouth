@@ -1,3 +1,4 @@
 2026-10-24 - 22:14 - initialized git repository, added remote origin https://github.com/GrindelfP/KingdomYouth.git, created AGENTS.md and docs/session-log.md
 2026-10-24 - 22:14 - committed [INIT] and pushed to origin main
 2026-10-25 - 19:21 - migrated AGENTS.md rules into CLAUDE.md (AGENTS.md now points to it); decided art direction is 2D top-down tile-grid; wrote docs/roadmap.md and 13 MVP tickets in docs/tickets/ (0001-0013) covering project setup, world/camera, resource stockpile, building construction, settler movement/needs/jobs, production buildings, housing/population, day-night/seasons, HUD, and save/load
+2026-10-25 - 19:59 - implemented ticket 0001: created project.godot (Godot 4.4.1, Forward+, 1280x720, main scene scenes/main.tscn), .gitignore, folder structure with .gitkeep, verified headless run exits cleanly; marked ticket 0001 done

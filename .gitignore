@@ -1,0 +1,19 @@
+# Godot generated
+.godot/
+*.translation
+export_presets.cfg
+*.tmp
+
+# Export artifacts
+builds/
+*.apk
+*.aab
+*.exe
+*.pck
+*.dmg
+*.app/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+*~
