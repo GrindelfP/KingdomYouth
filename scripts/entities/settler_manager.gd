@@ -60,6 +60,49 @@ func _spawn_starting_settlers() -> void:
 		_spawn_settler(cells[i])
 
 
+func clear_settlers() -> void:
+	for child in get_children():
+		remove_child(child)
+		child.free()
+	_next_display_id = 1
+
+
+func to_save_data() -> Array:
+	var entries := []
+	for settler in living_settlers():
+		entries.append({
+			"display_id": settler.display_id,
+			"cell": WorldGrid.cell_to_json(settler.get_grid_pos()),
+			"hunger": settler.needs.hunger,
+			"rest": settler.needs.rest,
+			"warmth": settler.needs.warmth,
+			"health": settler.needs.health,
+			"home": WorldGrid.cell_to_json(settler.home.origin) if settler.home else null,
+			"job": WorldGrid.cell_to_json(settler.worker.building.origin) if settler.worker.building else null,
+		})
+	return entries
+
+
+func from_save_data(entries: Array, buildings: BuildController) -> void:
+	clear_settlers()
+	for entry in entries:
+		var settler := _spawn_settler(WorldGrid.cell_from_json(entry["cell"]))
+		settler.display_id = int(entry["display_id"])
+		_next_display_id = maxi(_next_display_id, settler.display_id + 1)
+		settler.needs.hunger = float(entry["hunger"])
+		settler.needs.rest = float(entry["rest"])
+		settler.needs.warmth = float(entry["warmth"])
+		settler.needs.health = float(entry["health"])
+		if entry["home"] != null:
+			var house := buildings.find_building(WorldGrid.cell_from_json(entry["home"]))
+			if house:
+				settler.assign_home(house)
+		if entry["job"] != null:
+			var job_building := buildings.find_building(WorldGrid.cell_from_json(entry["job"]))
+			if job_building:
+				settler.worker.assign(job_building)
+
+
 func _spawn_settler(grid_pos: Vector2i) -> Settler:
 	var settler := Settler.new()
 	settler.display_id = _next_display_id

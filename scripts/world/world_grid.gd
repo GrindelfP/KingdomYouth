@@ -9,6 +9,8 @@ enum Terrain { GRASS, FOREST, WATER, ROCK }
 const MAP_RECT := Rect2i(Vector2i.ZERO, Vector2i(64, 64))
 const TERRAIN_SOURCE_ID := 0
 const MAP_SEED := 1337
+const TERRAIN_CODES := {"grass": "G", "forest": "F", "water": "W", "rock": "R"}
+const TERRAIN_BY_CODE := {"G": Terrain.GRASS, "F": Terrain.FOREST, "W": Terrain.WATER, "R": Terrain.ROCK}
 const ELEVATION_FREQUENCY := 0.05
 const MOISTURE_FREQUENCY := 0.08
 const WATER_LEVEL := -0.25
@@ -25,6 +27,7 @@ var terrain: TileMapLayer:
 
 
 func _ready() -> void:
+	add_to_group("world")
 	_generate_map()
 	map_generated.emit()
 
@@ -67,6 +70,38 @@ func set_occupied(grid_positions: Array[Vector2i], occupied: bool) -> void:
 		else:
 			_occupied.erase(grid_pos)
 		walkability_changed.emit(grid_pos)
+
+
+static func cell_to_json(grid_pos: Vector2i) -> Array:
+	return [grid_pos.x, grid_pos.y]
+
+
+static func cell_from_json(data: Array) -> Vector2i:
+	return Vector2i(int(data[0]), int(data[1]))
+
+
+func to_save_data() -> Dictionary:
+	var codes := PackedStringArray()
+	var regrowth := []
+	for x in range(MAP_RECT.position.x, MAP_RECT.end.x):
+		for y in range(MAP_RECT.position.y, MAP_RECT.end.y):
+			codes.append(TERRAIN_CODES[get_terrain_name(Vector2i(x, y))])
+	for grid_pos in _regrowth:
+		regrowth.append([grid_pos.x, grid_pos.y, _regrowth[grid_pos]])
+	return {"terrain": "".join(codes), "regrowth": regrowth}
+
+
+func from_save_data(data: Dictionary) -> void:
+	var codes: String = data["terrain"]
+	var index := 0
+	for x in range(MAP_RECT.position.x, MAP_RECT.end.x):
+		for y in range(MAP_RECT.position.y, MAP_RECT.end.y):
+			var terrain_type: Terrain = TERRAIN_BY_CODE[codes[index]]
+			terrain.set_cell(Vector2i(x, y), TERRAIN_SOURCE_ID, Vector2i(terrain_type, 0))
+			index += 1
+	_regrowth.clear()
+	for entry in data["regrowth"]:
+		_regrowth[Vector2i(int(entry[0]), int(entry[1]))] = float(entry[2])
 
 
 func get_terrain_name(grid_pos: Vector2i) -> String:

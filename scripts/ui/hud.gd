@@ -111,7 +111,36 @@ func _build_top_bar() -> PanelContainer:
 	row.add_child(_population_label)
 	_time_label = _make_label()
 	row.add_child(_time_label)
+	row.add_child(_make_button("Save", _save_game))
+	row.add_child(_make_button("Load", _load_game))
+	row.add_child(_make_button("New game", SaveManager.start_new_game))
 	return bar
+
+
+func _make_button(text: String, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.focus_mode = Control.FOCUS_NONE
+	button.pressed.connect(action)
+	return button
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("save_game"):
+		_save_game()
+	elif event.is_action_pressed("load_game"):
+		_load_game()
+
+
+func _save_game() -> void:
+	add_toast("Game saved." if SaveManager.save_game() else "Could not save the game.")
+
+
+func _load_game() -> void:
+	if not SaveManager.has_save():
+		add_toast("No saved game yet.")
+		return
+	add_toast("Game loaded." if SaveManager.load_game() else "Could not load the save.")
 
 
 func _make_label() -> Label:

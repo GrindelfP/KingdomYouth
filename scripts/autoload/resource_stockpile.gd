@@ -19,6 +19,24 @@ func _ready() -> void:
 		_amounts[type] = STARTING_AMOUNTS.get(type, 0)
 
 
+func reset() -> void:
+	_amounts.clear()
+	for type in Type.values():
+		_amounts[type] = STARTING_AMOUNTS.get(type, 0)
+
+
+func to_save_data() -> Array:
+	var amounts := []
+	for type in Type.values():
+		amounts.append(_amounts[type])
+	return amounts
+
+
+func from_save_data(data: Array) -> void:
+	for type in Type.values():
+		_amounts[type] = int(data[type])
+
+
 func get_amount(type: Type) -> int:
 	return _amounts[type]
 

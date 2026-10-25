@@ -112,6 +112,54 @@ func clear_buildings() -> void:
 	_world.clear_occupancy()
 
 
+func find_building(origin: Vector2i) -> Building:
+	for child in get_children():
+		if child is Building and child.origin == origin:
+			return child
+	return null
+
+
+func to_save_data() -> Array:
+	var entries := []
+	for child in get_children():
+		if child is Building:
+			entries.append({
+				"kind": "building",
+				"id": String(child.def.id),
+				"origin": WorldGrid.cell_to_json(child.origin),
+				"heat_left": child.heat_left,
+				"birth_cooldown": child.birth_cooldown,
+			})
+		elif child is ConstructionSite:
+			entries.append({
+				"kind": "site",
+				"id": String(child.def.id),
+				"origin": WorldGrid.cell_to_json(child.origin),
+				"progress": child.progress,
+			})
+	return entries
+
+
+func from_save_data(entries: Array) -> void:
+	clear_buildings()
+	for entry in entries:
+		var def := _def_by_id(entry["id"])
+		var origin := WorldGrid.cell_from_json(entry["origin"])
+		if entry["kind"] == "site":
+			add_construction_site(def, origin, float(entry["progress"]))
+		else:
+			var building := add_building(def, origin)
+			building.heat_left = float(entry["heat_left"])
+			building.birth_cooldown = float(entry["birth_cooldown"])
+
+
+func _def_by_id(id: String) -> BuildingDef:
+	for def in building_defs:
+		if String(def.id) == id:
+			return def
+	return null
+
+
 func _on_site_completed(site: ConstructionSite) -> void:
 	var building := Building.new()
 	add_child(building)
