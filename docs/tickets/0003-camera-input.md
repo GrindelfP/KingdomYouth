@@ -1,6 +1,6 @@
 # 0003 — Camera & input controls
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M1 — World Foundation
 - **Depends on:** 0002
 
@@ -24,10 +24,20 @@ The player can look at the whole map: pan, zoom, and (optionally) edge-scroll, c
 - Minimap.
 
 ## Acceptance criteria
-- [ ] Camera pans via keyboard and/or drag without leaving map bounds.
-- [ ] Camera zooms smoothly within defined min/max limits.
-- [ ] All camera inputs are defined in the Input Map, not hardcoded key checks.
-- [ ] A helper function returns the grid tile currently under the mouse cursor.
+- [x] Camera pans via keyboard and/or drag without leaving map bounds. (Verified headless with the `camera_pan_right` action; clamp checked against the expected edge.)
+- [x] Camera zooms smoothly within defined min/max limits. (Verified headless: wheel-in clamps at max zoom 3.0.)
+- [x] All camera inputs are defined in the Input Map, not hardcoded key checks.
+- [x] A helper function returns the grid tile currently under the mouse cursor. (`CameraController.get_hovered_grid_pos()`; checked that it runs, not against a real cursor position.)
+
+## Decisions
+- Controls (all in the Input Map, `project.godot` `[input]`):
+  - `camera_pan_left/right/up/down`: WASD and arrow keys.
+  - `camera_zoom_in/out`: mouse wheel up/down.
+  - `camera_drag`: middle mouse button held, drag to pan. Right-click stays free for later placement/cancel actions.
+- Zoom: multiplicative steps of 1.15, range 0.5 to 3.0, eased toward the target zoom each frame.
+- Keyboard pan speed is scaled by `1 / zoom`, so it feels the same at any zoom level.
+- Clamping is done in code on the camera position, not with `Camera2D` limits. The limits clamp only the drawn view, so the stored position drifts past the edge and the camera lags when reversing. When the view is larger than the map, the camera centers on it.
+- Edge-scroll is not implemented (optional in this ticket).
 
 ## Open questions
 - Keyboard pan, drag pan, or both — default to both unless the user prefers one.

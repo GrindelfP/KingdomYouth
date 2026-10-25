@@ -12,7 +12,9 @@ const WATER_LEVEL := -0.25
 const ROCK_LEVEL := 0.4
 const FOREST_LEVEL := 0.15
 
-@onready var terrain: TileMapLayer = $Terrain
+var terrain: TileMapLayer:
+	get:
+		return $Terrain
 
 
 func _ready() -> void:
