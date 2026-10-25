@@ -15,6 +15,7 @@ var pathfinder: GridPathfinder
 var needs: Needs
 var worker: Worker
 var home: Building
+var display_id := 0
 var _last_cell := Vector2i.ZERO
 var _destination := Vector2i.ZERO
 var _path: Array[Vector2i] = []

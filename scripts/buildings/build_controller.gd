@@ -1,6 +1,9 @@
 class_name BuildController
 extends Node2D
 
+signal hint_changed(text: String)
+signal construction_completed(building: Building)
+
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
 
@@ -11,7 +14,6 @@ var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/house.tres"),
 ]
 var _world: WorldGrid
-var _feedback: Label
 var _placing := false
 var _selected := 0
 var _hover := Vector2i.ZERO
@@ -19,14 +21,13 @@ var _hover := Vector2i.ZERO
 
 func _ready() -> void:
 	_world = get_parent()
-	_feedback = get_node("../UI/Feedback")
 
 
 func _process(_delta: float) -> void:
 	if _placing:
 		_hover = _world.world_to_grid(get_global_mouse_position())
 	queue_redraw()
-	_update_feedback()
+	_update_hint()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -44,6 +45,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func is_placing() -> bool:
 	return _placing
+
+
+func select_building(index: int) -> void:
+	_selected = index
+	_placing = true
+
+
+func cancel_placement() -> void:
+	_placing = false
 
 
 func selected_def() -> BuildingDef:
@@ -77,20 +87,46 @@ func try_place(def: BuildingDef, origin: Vector2i) -> bool:
 	return true
 
 
+func add_building(def: BuildingDef, origin: Vector2i) -> Building:
+	_world.set_occupied(def.get_cells(origin), true)
+	var building := Building.new()
+	add_child(building)
+	building.setup(_world, def, origin)
+	return building
+
+
+func add_construction_site(def: BuildingDef, origin: Vector2i, progress: float) -> ConstructionSite:
+	_world.set_occupied(def.get_cells(origin), true)
+	var site := ConstructionSite.new()
+	add_child(site)
+	site.setup(_world, def, origin)
+	site.progress = progress
+	site.completed.connect(_on_site_completed)
+	return site
+
+
+func clear_buildings() -> void:
+	for child in get_children():
+		remove_child(child)
+		child.free()
+	_world.clear_occupancy()
+
+
 func _on_site_completed(site: ConstructionSite) -> void:
 	var building := Building.new()
 	add_child(building)
 	building.setup(_world, site.def, site.origin)
 	site.queue_free()
+	construction_completed.emit(building)
 
 
-func _update_feedback() -> void:
+func _update_hint() -> void:
 	var def := selected_def()
 	if not _placing:
-		_feedback.text = "[B] Build: %s  [Tab] next building" % def.display_name
+		hint_changed.emit("")
 		return
 	var reason := get_placement_error(def, _hover)
-	_feedback.text = "Build %s: %s" % [def.display_name, reason if reason != "" else "click to place, Esc to cancel"]
+	hint_changed.emit("Build %s: %s" % [def.display_name, reason if reason != "" else "click to place, Esc to cancel"])
 
 
 func _draw() -> void:

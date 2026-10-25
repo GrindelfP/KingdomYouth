@@ -1,0 +1,140 @@
+class_name Hud
+extends CanvasLayer
+
+const TOAST_SECONDS := 6.0
+const MAX_TOASTS := 5
+const SEASON_MESSAGES := [
+	"Spring has come. Farms are productive again.",
+	"Summer. Farms are at their best.",
+	"Autumn. Stock up before winter.",
+	"Winter. Farms rest and unheated settlers grow cold.",
+]
+
+var _build: BuildController
+var _jobs: JobController
+var _settlers: SettlerManager
+var _resource_labels: Array[Label] = []
+var _time_label: Label
+var _population_label: Label
+var _hint_label: Label
+var _toasts: VBoxContainer
+
+
+func _ready() -> void:
+	_build = get_parent().get_node("Buildings")
+	_jobs = get_parent().get_node("Jobs")
+	_settlers = get_parent().get_node("Settlers")
+
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root)
+
+	root.add_child(_build_top_bar())
+	_hint_label = _make_label()
+	_hint_label.position = Vector2(16, 52)
+	root.add_child(_hint_label)
+
+	_toasts = VBoxContainer.new()
+	_toasts.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_toasts.offset_left = -360
+	_toasts.offset_right = -16
+	_toasts.offset_top = 52
+	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_toasts)
+
+	var menu := BuildingMenu.new()
+	menu.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	menu.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	menu.offset_left = 16
+	menu.offset_bottom = -16
+	root.add_child(menu)
+	menu.setup(_build)
+
+	var info := InfoPanel.new()
+	info.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	info.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	info.grow_vertical = Control.GROW_DIRECTION_BOTH
+	info.offset_right = -16
+	root.add_child(info)
+	info.setup(_jobs, _settlers, _build)
+
+	ResourceStockpile.resource_changed.connect(_on_resource_changed)
+	for type in ResourceStockpile.Type.values():
+		_on_resource_changed(type, ResourceStockpile.get_amount(type))
+	_build.hint_changed.connect(func(text: String) -> void: _hint_label.text = text)
+	_build.construction_completed.connect(_on_construction_completed)
+	_settlers.settler_born.connect(_on_settler_born)
+	_settlers.settler_died.connect(_on_settler_died)
+	TimeManager.season_changed.connect(_on_season_changed)
+
+
+func _process(_delta: float) -> void:
+	_time_label.text = "Day %d - %s (%d/%d)" % [
+		TimeManager.day, TimeManager.get_season_name(), TimeManager.get_day_in_season(), TimeManager.DAYS_PER_SEASON,
+	]
+	_population_label.text = "Population %d (working %d)" % [_settlers.population(), _settlers.employed_count()]
+
+
+func add_toast(text: String) -> void:
+	var label := _make_label()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	label.custom_minimum_size = Vector2(340, 0)
+	_toasts.add_child(label)
+	while _toasts.get_child_count() > MAX_TOASTS:
+		var oldest := _toasts.get_child(0)
+		_toasts.remove_child(oldest)
+		oldest.queue_free()
+	get_tree().create_timer(TOAST_SECONDS).timeout.connect(func() -> void:
+		if is_instance_valid(label):
+			label.queue_free()
+	)
+
+
+func _build_top_bar() -> PanelContainer:
+	var bar := PanelContainer.new()
+	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	bar.offset_bottom = 40
+	var margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 8)
+	bar.add_child(margin)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	margin.add_child(row)
+	for type in ResourceStockpile.Type.values():
+		var label := _make_label()
+		_resource_labels.append(label)
+		row.add_child(label)
+	_population_label = _make_label()
+	row.add_child(_population_label)
+	_time_label = _make_label()
+	row.add_child(_time_label)
+	return bar
+
+
+func _make_label() -> Label:
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+
+func _on_resource_changed(type: int, new_amount: int) -> void:
+	_resource_labels[type].text = "%s: %d" % [ResourceStockpile.TYPE_NAMES[type], new_amount]
+
+
+func _on_construction_completed(building: Building) -> void:
+	add_toast("Construction complete: %s." % building.def.display_name)
+
+
+func _on_settler_born(settler: Settler) -> void:
+	add_toast("Settler %d was born." % settler.display_id)
+
+
+func _on_settler_died(settler: Settler) -> void:
+	add_toast("Settler %d has died." % settler.display_id)
+
+
+func _on_season_changed(season: int) -> void:
+	add_toast("%s. %s" % [TimeManager.SEASON_NAMES[season], SEASON_MESSAGES[season]])

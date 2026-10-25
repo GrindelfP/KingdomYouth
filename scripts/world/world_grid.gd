@@ -53,6 +53,13 @@ func is_occupied(grid_pos: Vector2i) -> bool:
 	return _occupied.has(grid_pos)
 
 
+func clear_occupancy() -> void:
+	var previous := _occupied.keys()
+	_occupied.clear()
+	for grid_pos in previous:
+		walkability_changed.emit(grid_pos)
+
+
 func set_occupied(grid_positions: Array[Vector2i], occupied: bool) -> void:
 	for grid_pos in grid_positions:
 		if occupied:

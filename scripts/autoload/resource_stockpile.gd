@@ -4,6 +4,7 @@ signal resource_changed(type: Type, new_amount: int)
 
 enum Type { WOOD, FOOD, STONE }
 
+const TYPE_NAMES := ["Wood", "Food", "Stone"]
 const STARTING_AMOUNTS := {
 	Type.WOOD: 50,
 	Type.FOOD: 20,

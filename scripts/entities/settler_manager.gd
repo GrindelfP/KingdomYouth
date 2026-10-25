@@ -2,6 +2,8 @@ class_name SettlerManager
 extends Node2D
 
 signal population_changed(count: int)
+signal settler_born(settler: Settler)
+signal settler_died(settler: Settler)
 
 const STARTING_SETTLER_COUNT := 5
 const POPULATION_TICK := 1.0
@@ -15,6 +17,7 @@ var _world: WorldGrid
 var _pathfinder: GridPathfinder
 var _buildings: Node2D
 var _tick_accumulator := 0.0
+var _next_display_id := 1
 
 
 func _ready() -> void:
@@ -32,7 +35,15 @@ func _process(delta: float) -> void:
 
 
 func population() -> int:
-	return _living().size()
+	return living_settlers().size()
+
+
+func employed_count() -> int:
+	var count := 0
+	for settler in living_settlers():
+		if settler.worker.building != null:
+			count += 1
+	return count
 
 
 func _spawn_starting_settlers() -> void:
@@ -51,6 +62,8 @@ func _spawn_starting_settlers() -> void:
 
 func _spawn_settler(grid_pos: Vector2i) -> Settler:
 	var settler := Settler.new()
+	settler.display_id = _next_display_id
+	_next_display_id += 1
 	add_child(settler)
 	settler.setup(_world, _pathfinder, grid_pos)
 	settler.needs.died.connect(_on_settler_died.bind(settler))
@@ -76,7 +89,7 @@ func _update_heating(dt: float) -> void:
 
 
 func _assign_homeless() -> void:
-	for settler in _living():
+	for settler in living_settlers():
 		if settler.home == null:
 			var house := _house_with_room()
 			if house:
@@ -104,17 +117,20 @@ func _update_births(dt: float) -> void:
 		if cells.is_empty():
 			continue
 		house.birth_cooldown = BIRTH_COOLDOWN
-		_spawn_settler(cells[0]).assign_home(house)
+		var newborn := _spawn_settler(cells[0])
+		newborn.assign_home(house)
+		settler_born.emit(newborn)
 
 
 func _on_settler_died(settler: Settler) -> void:
 	settler.worker.unassign()
 	settler.unassign_home()
 	settler.queue_free()
+	settler_died.emit(settler)
 	population_changed.emit(population())
 
 
-func _living() -> Array[Settler]:
+func living_settlers() -> Array[Settler]:
 	var settlers: Array[Settler] = []
 	for child in get_children():
 		if child is Settler and not child.is_queued_for_deletion():

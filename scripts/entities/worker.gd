@@ -38,6 +38,14 @@ func unassign() -> void:
 	building = null
 
 
+func is_paused() -> bool:
+	return _paused
+
+
+func get_state_name() -> String:
+	return State.keys()[_state].capitalize()
+
+
 func pause() -> void:
 	_paused = true
 	cancel_task()
