@@ -1,18 +1,22 @@
-[gd_scene load_steps=7 format=3 uid="uid://b0qwimmso5dir"]
+[gd_scene load_steps=9 format=3 uid="uid://b0qwimmso5dir"]
 
 [ext_resource type="Script" uid="uid://bixt1yxib3b5a" path="res://scripts/world/world_grid.gd" id="1_grid"]
 [ext_resource type="TileSet" uid="uid://b1jyknmox17ev" path="res://resources/terrain_tileset.tres" id="2_tiles"]
 [ext_resource type="Script" uid="uid://dj5rw627i0hig" path="res://scripts/world/camera_controller.gd" id="3_camera"]
-[ext_resource type="Script" path="res://scripts/buildings/build_controller.gd" id="4_build"]
-[ext_resource type="Script" path="res://scripts/world/grid_pathfinder.gd" id="5_pathfinder"]
-[ext_resource type="Script" path="res://scripts/entities/settler_manager.gd" id="6_settlers"]
-[ext_resource type="Script" path="res://scripts/world/job_controller.gd" id="7_jobs"]
+[ext_resource type="Script" uid="uid://b0qqpdbheg33i" path="res://scripts/buildings/build_controller.gd" id="4_build"]
+[ext_resource type="Script" uid="uid://c2dq243m7sua2" path="res://scripts/world/grid_pathfinder.gd" id="5_pathfinder"]
+[ext_resource type="Script" uid="uid://p3if71kbp2t3" path="res://scripts/entities/settler_manager.gd" id="6_settlers"]
+[ext_resource type="Script" uid="uid://cy32elsnru8ud" path="res://scripts/world/job_controller.gd" id="7_jobs"]
+[ext_resource type="Script" path="res://scripts/world/day_night_tint.gd" id="8_daynight"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_grid")
 
 [node name="Terrain" type="TileMapLayer" parent="."]
 tile_set = ExtResource("2_tiles")
+
+[node name="DayNight" type="CanvasModulate" parent="."]
+script = ExtResource("8_daynight")
 
 [node name="Camera" type="Camera2D" parent="."]
 script = ExtResource("3_camera")

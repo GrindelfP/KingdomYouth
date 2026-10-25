@@ -9,6 +9,7 @@ var origin: Vector2i
 var workers: Array[Settler] = []
 var residents: Array[Settler] = []
 var birth_cooldown := 0.0
+var heat_left := 0.0
 var _world: WorldGrid
 var _size: Vector2
 
@@ -43,6 +44,10 @@ func get_access_cells() -> Array[Vector2i]:
 
 func job_def() -> JobDef:
 	return def.job
+
+
+func is_heated() -> bool:
+	return heat_left > 0.0
 
 
 func has_free_housing() -> bool:

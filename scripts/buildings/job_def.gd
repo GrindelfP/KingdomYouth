@@ -7,3 +7,4 @@ extends Resource
 @export var output_type: int
 @export var output_amount := 1
 @export var target_terrain := ""
+@export var seasonal := false

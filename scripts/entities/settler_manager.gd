@@ -8,6 +8,8 @@ const POPULATION_TICK := 1.0
 const BIRTH_COOLDOWN := 45.0
 const BIRTH_MIN_FOOD := 10
 const MIN_PARENTS := 2
+const HEAT_DURATION := 20.0
+const FUEL_PER_HEATING := 1
 
 var _world: WorldGrid
 var _pathfinder: GridPathfinder
@@ -58,7 +60,19 @@ func _spawn_settler(grid_pos: Vector2i) -> Settler:
 
 func _population_tick(dt: float) -> void:
 	_assign_homeless()
+	_update_heating(dt)
 	_update_births(dt)
+
+
+func _update_heating(dt: float) -> void:
+	for house in _houses():
+		if not TimeManager.is_cold():
+			house.heat_left = 0.0
+			continue
+		house.heat_left = maxf(house.heat_left - dt, 0.0)
+		if not house.is_heated() and house.residents.size() > 0:
+			if ResourceStockpile.remove(ResourceStockpile.Type.WOOD, FUEL_PER_HEATING):
+				house.heat_left = HEAT_DURATION
 
 
 func _assign_homeless() -> void:

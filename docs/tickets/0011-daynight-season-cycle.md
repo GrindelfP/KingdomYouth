@@ -1,6 +1,6 @@
 # 0011 — Day/night & season cycle
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M3 — Population & Time
 - **Depends on:** 0007, 0009
 
@@ -24,11 +24,19 @@ Seasons are what make Banished's resource math actually matter (you must stockpi
 - Multi-year calendar quirks (leap years etc.) — irrelevant for a game.
 
 ## Acceptance criteria
-- [ ] In-game day and season advance automatically and predictably.
-- [ ] Farm output visibly changes across seasons per the defined multipliers.
-- [ ] Warmth need (0007) is enforced using wood-as-fuel, with winter creating real pressure (settlers can die from cold if underprepared, per 0010's death wiring).
-- [ ] Season/day changes emit signals consumable by the UI layer.
+- [x] In-game day and season advance automatically and predictably. (`TimeManager`: 20 real seconds per day, 10 days per season.)
+- [x] Farm output visibly changes across seasons per the defined multipliers. (Spring 1.0, summer 1.5, autumn 1.0, winter 0 = farmers idle.)
+- [x] Warmth need (0007) is enforced using wood-as-fuel, with winter creating real pressure (settlers can die from cold if underprepared, per 0010's death wiring). (Unheated: warmth drains 1/s in winter. Heated house: 1 wood per 20 s. Zero warmth: 0.5 health/s.)
+- [x] Season/day changes emit signals consumable by the UI layer. (`day_changed(day)`, `season_changed(season)`.)
+
+## Decisions
+- `TimeManager` autoload (`scripts/autoload/time_manager.gd`). Day 1 is spring. `advance(seconds)` drives the clock; `_process` calls it each frame.
+- Day/night is cosmetic only: a `CanvasModulate` tint (`scripts/world/day_night_tint.gd`) that brightens and darkens the map. Nothing else depends on it.
+- Farm (`farmer.tres`) is `seasonal`: its work time is divided by the season multiplier. In winter the farmers stay idle and retry.
+- Warmth (`Needs.warm`, set by the settler from its house): drains 1/s in winter unless warm, and recovers 5/s otherwise. A zero warmth costs 0.5 health/s, checked after starvation and before exposure.
+- Heating: in winter, each house with residents burns 1 wood to stay heated for 20 s. Heating is automatic, and an empty stockpile means no heat.
+- Cold seasons are winter only. Autumn is not cold, so there is one cold season.
 
 ## Open questions
-- Real-time-to-in-game-time ratio — pick a pace that makes a "year" long enough to matter but short enough to playtest quickly (e.g. a few real minutes per season); tune once playable.
+- Real-time-to-in-game-time ratio: set to 20 s per day, so a season lasts about 3 minutes. Tune once playable.
 - Whether night meaningfully changes settler behavior or is purely cosmetic for MVP — recommend cosmetic-only for now, revisit if the game needs more rhythm later.

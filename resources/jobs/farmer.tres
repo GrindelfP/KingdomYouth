@@ -10,3 +10,4 @@ work_time = 6.0
 output_type = 1
 output_amount = 3
 target_terrain = ""
+seasonal = true

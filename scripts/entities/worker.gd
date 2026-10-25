@@ -72,6 +72,9 @@ func _process(delta: float) -> void:
 
 
 func _start_travel() -> void:
+	if building.job_def().seasonal and TimeManager.food_multiplier() <= 0.0:
+		_retry_left = RETRY_DELAY
+		return
 	var target := _find_target()
 	if target == NO_TARGET:
 		_retry_left = RETRY_DELAY
@@ -104,7 +107,7 @@ func _on_arrived(grid_pos: Vector2i) -> void:
 	if _state != State.TRAVEL or grid_pos != _target:
 		return
 	_state = State.WORK
-	_work_left = building.job_def().work_time
+	_work_left = _work_duration()
 
 
 func _on_path_failed(grid_pos: Vector2i) -> void:
@@ -113,6 +116,13 @@ func _on_path_failed(grid_pos: Vector2i) -> void:
 	_state = State.IDLE
 	_target = NO_TARGET
 	_retry_left = RETRY_DELAY
+
+
+func _work_duration() -> float:
+	var job := building.job_def()
+	if not job.seasonal:
+		return job.work_time
+	return job.work_time / TimeManager.food_multiplier()
 
 
 func _finish_work() -> void:

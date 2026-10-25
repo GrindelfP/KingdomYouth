@@ -97,6 +97,7 @@ func unassign_home() -> void:
 
 func _on_needs_ticked() -> void:
 	needs.at_home = home != null and get_grid_pos() == _home_cell and not _moving
+	needs.warm = home != null and home.is_heated()
 	_update_resting()
 	if needs.is_critical() or _resting:
 		worker.pause()

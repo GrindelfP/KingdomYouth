@@ -18,12 +18,16 @@ const REST_RECOVERY_PER_SECOND := 4.0
 const STARVE_DAMAGE_PER_SECOND := 1.0
 const EXPOSURE_DAMAGE_PER_SECOND := 0.2
 const REGEN_PER_SECOND := 0.5
+const WARMTH_DRAIN_PER_SECOND := 1.0
+const WARMTH_RECOVER_PER_SECOND := 5.0
+const COLD_DAMAGE_PER_SECOND := 0.5
 
 var hunger := 50.0
 var rest := MAX_VALUE
 var warmth := MAX_VALUE
 var health := MAX_VALUE
 var at_home := false
+var warm := false
 var sheltered := false
 
 var _accumulated := 0.0
@@ -60,6 +64,7 @@ func _tick(dt: float) -> void:
 	hunger = minf(hunger + HUNGER_PER_SECOND * dt, MAX_VALUE)
 	var rest_change := REST_RECOVERY_PER_SECOND if at_home else -REST_DRAIN_PER_SECOND
 	rest = clampf(rest + rest_change * dt, 0.0, MAX_VALUE)
+	_update_warmth(dt)
 	if hunger >= EAT_HUNGER:
 		try_eat()
 	_apply_health(dt)
@@ -72,9 +77,18 @@ func _tick(dt: float) -> void:
 	ticked.emit()
 
 
+func _update_warmth(dt: float) -> void:
+	if TimeManager.is_cold() and not warm:
+		warmth = maxf(warmth - WARMTH_DRAIN_PER_SECOND * dt, 0.0)
+	else:
+		warmth = minf(warmth + WARMTH_RECOVER_PER_SECOND * dt, MAX_VALUE)
+
+
 func _apply_health(dt: float) -> void:
 	if is_starving():
 		health -= STARVE_DAMAGE_PER_SECOND * dt
+	elif warmth <= 0.0:
+		health -= COLD_DAMAGE_PER_SECOND * dt
 	elif not sheltered:
 		health -= EXPOSURE_DAMAGE_PER_SECOND * dt
 	else:
