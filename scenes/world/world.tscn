@@ -4,6 +4,8 @@
 [ext_resource type="TileSet" path="res://resources/terrain_tileset.tres" id="2_tiles"]
 [ext_resource type="Script" uid="uid://dj5rw627i0hig" path="res://scripts/world/camera_controller.gd" id="3_camera"]
 [ext_resource type="Script" path="res://scripts/buildings/build_controller.gd" id="4_build"]
+[ext_resource type="Script" path="res://scripts/world/grid_pathfinder.gd" id="5_pathfinder"]
+[ext_resource type="Script" path="res://scripts/entities/settler_manager.gd" id="6_settlers"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_grid")
@@ -14,8 +16,14 @@ tile_set = ExtResource("2_tiles")
 [node name="Camera" type="Camera2D" parent="."]
 script = ExtResource("3_camera")
 
+[node name="Pathfinder" type="Node" parent="."]
+script = ExtResource("5_pathfinder")
+
 [node name="Buildings" type="Node2D" parent="."]
 script = ExtResource("4_build")
+
+[node name="Settlers" type="Node2D" parent="."]
+script = ExtResource("6_settlers")
 
 [node name="UI" type="CanvasLayer" parent="."]
 

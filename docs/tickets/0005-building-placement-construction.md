@@ -40,6 +40,3 @@ This is one of the two core interaction loops in Banished-likes (the other being
 
 ## Open questions
 - Whether construction should require a settler on site (0008) once that exists.
-- Settlers standing on a tile do not block placement yet. Revisit in 0006 once pathfinding can start from an occupied cell.
-
-- Does construction require a settler to physically walk there and work (ties into 0006/0008), or is it tick-based/automatic for MVP? Decided here: automatic time-based completion for now. Wire it to settler labor once 0008 exists.
