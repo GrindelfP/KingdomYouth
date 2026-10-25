@@ -1,6 +1,6 @@
 # 0008 — Job & task assignment system
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M2 — Core Simulation Loop
 - **Depends on:** 0006, 0007
 
@@ -24,10 +24,18 @@ This is the other core interaction loop alongside building placement (0005). The
 - Multiple settlers per job slot beyond what a building defines (0009 defines slot counts).
 
 ## Acceptance criteria
-- [ ] Player can assign an idle settler to an available job slot on a finished building and unassign them.
-- [ ] An assigned settler autonomously performs the full work loop (travel → work → deposit) on a repeating basis without further player input.
-- [ ] A settler interrupted by critical hunger breaks off, satisfies the need, and resumes their job afterward.
-- [ ] Reassigning or unassigning a working settler cancels their in-progress task cleanly (no orphaned state, no duplicate output).
+- [x] Player can assign an idle settler to an available job slot on a finished building and unassign them. (Click a settler, then click a building; `U` unassigns.)
+- [x] An assigned settler autonomously performs the full work loop (travel → work → deposit) on a repeating basis without further player input. (Headless: farm output rose by 15 food in 12 s.)
+- [x] A settler interrupted by critical hunger breaks off, satisfies the need, and resumes their job afterward. (Headless: paused at critical hunger, resumed after food returned, still assigned.)
+- [x] Reassigning or unassigning a working settler cancels their in-progress task cleanly (no orphaned state, no duplicate output). (Output is only added on completed work; unassign mid-work produced no extra food.)
+
+## Decisions
+- `JobDef` resource (`scripts/buildings/job_def.gd`) hangs off `BuildingDef.job`: `slots`, `work_time`, `output_type`, `output_amount`, `target_terrain`. An empty `target_terrain` means the settler works at the building itself, from one of its access cells. A non-empty value means the settler harvests the nearest reachable tile of that terrain.
+- `Worker` (`scripts/entities/worker.gd`) is a child node of each settler. States: IDLE, TRAVEL, WORK. Work only produces output on completion, and only if the target is still the right terrain, so a depleted tile or a cancelled task yields nothing.
+- Interrupts: `Settler` ticks with `Needs`. While `is_critical()`, the worker pauses, which cancels the travel or work in progress. It resumes when hunger drops below critical. Eating is instant, so this is a brief break.
+- Target search: forest candidates are sorted by distance and checked with the pathfinder, up to 30 tries. Failures retry after 3 s.
+- Assignment is manual. `JobController` (`scripts/world/job_controller.gd`) handles click-to-select and click-to-assign, and reassignment unassigns the previous job first. Idle settlers do nothing.
+- Known quirk: `BuildController` used to hold a `preload` of the barn resource in a `const`. That gave a `Resource` without its script when a `BuildingDef` was created first, so the list now loads at runtime.
 
 ## Open questions
 - Exact UI for assignment (click building → see slots → click settler, vs. click settler → see job list) — defer bikeshedding to 0012; this ticket just needs *a* functional interaction, even a debug one.

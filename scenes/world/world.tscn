@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/buildings/build_controller.gd" id="4_build"]
 [ext_resource type="Script" path="res://scripts/world/grid_pathfinder.gd" id="5_pathfinder"]
 [ext_resource type="Script" path="res://scripts/entities/settler_manager.gd" id="6_settlers"]
+[ext_resource type="Script" path="res://scripts/world/job_controller.gd" id="7_jobs"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_grid")
@@ -25,6 +26,9 @@ script = ExtResource("4_build")
 [node name="Settlers" type="Node2D" parent="."]
 script = ExtResource("6_settlers")
 
+[node name="Jobs" type="Node" parent="."]
+script = ExtResource("7_jobs")
+
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="Feedback" type="Label" parent="UI"]
@@ -32,3 +36,9 @@ offset_left = 16.0
 offset_top = 16.0
 offset_right = 800.0
 offset_bottom = 42.0
+
+[node name="Status" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 800.0
+offset_bottom = 70.0

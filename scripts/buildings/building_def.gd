@@ -6,6 +6,8 @@ extends Resource
 @export var footprint := Vector2i.ONE
 @export var cost: Dictionary = {}
 @export var build_time := 5.0
+@export var job: JobDef
+@export var housing_capacity := 0
 
 
 func get_cells(origin: Vector2i) -> Array[Vector2i]:

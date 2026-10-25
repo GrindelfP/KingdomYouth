@@ -1,10 +1,10 @@
 class_name BuildController
 extends Node2D
 
-const BUILDING_DEFS: Array[BuildingDef] = [preload("res://resources/buildings/storage_barn.tres")]
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
 
+var building_defs: Array[BuildingDef] = [load("res://resources/buildings/storage_barn.tres")]
 var _world: WorldGrid
 var _feedback: Label
 var _placing := false
@@ -28,7 +28,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("build_toggle"):
 		_placing = not _placing
 	elif event.is_action_pressed("build_cycle"):
-		_selected = (_selected + 1) % BUILDING_DEFS.size()
+		_selected = (_selected + 1) % building_defs.size()
 	elif event.is_action_pressed("cancel_build") and _placing:
 		_placing = false
 	elif event.is_action_pressed("place_building") and _placing:
@@ -37,8 +37,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func is_placing() -> bool:
+	return _placing
+
+
 func selected_def() -> BuildingDef:
-	return BUILDING_DEFS[_selected]
+	return building_defs[_selected]
 
 
 func get_placement_error(def: BuildingDef, origin: Vector2i) -> String:

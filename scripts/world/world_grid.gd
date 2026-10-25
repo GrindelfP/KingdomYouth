@@ -70,6 +70,21 @@ func get_world_bounds() -> Rect2:
 	return Rect2(top_left, Vector2(MAP_RECT.size) * get_tile_size())
 
 
+func get_terrain_cells(terrain_name: String, from: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for x in range(MAP_RECT.position.x, MAP_RECT.end.x):
+		for y in range(MAP_RECT.position.y, MAP_RECT.end.y):
+			var grid_pos := Vector2i(x, y)
+			if get_terrain_name(grid_pos) == terrain_name and not is_occupied(grid_pos):
+				cells.append(grid_pos)
+	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
+	return cells
+
+
+func set_terrain(grid_pos: Vector2i, terrain_type: Terrain) -> void:
+	terrain.set_cell(grid_pos, TERRAIN_SOURCE_ID, Vector2i(terrain_type, 0))
+
+
 func get_cell_rect(grid_pos: Vector2i) -> Rect2:
 	var tile_size := get_tile_size()
 	return Rect2(grid_to_world(grid_pos) - tile_size / 2.0, tile_size)
