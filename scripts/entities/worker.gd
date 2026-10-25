@@ -119,5 +119,5 @@ func _finish_work() -> void:
 	if not job.target_terrain.is_empty():
 		if _settler.world.get_terrain_name(_target) != job.target_terrain:
 			return
-		_settler.world.set_terrain(_target, WorldGrid.Terrain.GRASS)
+		_settler.world.deplete_forest(_target)
 	ResourceStockpile.add(job.output_type, job.output_amount)

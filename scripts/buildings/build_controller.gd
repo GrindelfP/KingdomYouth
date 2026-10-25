@@ -4,7 +4,11 @@ extends Node2D
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
 
-var building_defs: Array[BuildingDef] = [load("res://resources/buildings/storage_barn.tres")]
+var building_defs: Array[BuildingDef] = [
+	load("res://resources/buildings/woodcutters_lodge.tres"),
+	load("res://resources/buildings/farm.tres"),
+	load("res://resources/buildings/storage_barn.tres"),
+]
 var _world: WorldGrid
 var _feedback: Label
 var _placing := false

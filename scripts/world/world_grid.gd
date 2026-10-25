@@ -14,8 +14,10 @@ const MOISTURE_FREQUENCY := 0.08
 const WATER_LEVEL := -0.25
 const ROCK_LEVEL := 0.4
 const FOREST_LEVEL := 0.15
+const REGROW_TIME := 120.0
 
 var _occupied: Dictionary = {}
+var _regrowth: Dictionary = {}
 
 var terrain: TileMapLayer:
 	get:
@@ -25,6 +27,14 @@ var terrain: TileMapLayer:
 func _ready() -> void:
 	_generate_map()
 	map_generated.emit()
+
+
+func _process(delta: float) -> void:
+	for grid_pos in _regrowth.keys():
+		_regrowth[grid_pos] -= delta
+		if _regrowth[grid_pos] <= 0.0 and not is_occupied(grid_pos):
+			terrain.set_cell(grid_pos, TERRAIN_SOURCE_ID, Vector2i(Terrain.FOREST, 0))
+			_regrowth.erase(grid_pos)
 
 
 func is_in_bounds(grid_pos: Vector2i) -> bool:
@@ -81,8 +91,9 @@ func get_terrain_cells(terrain_name: String, from: Vector2i) -> Array[Vector2i]:
 	return cells
 
 
-func set_terrain(grid_pos: Vector2i, terrain_type: Terrain) -> void:
-	terrain.set_cell(grid_pos, TERRAIN_SOURCE_ID, Vector2i(terrain_type, 0))
+func deplete_forest(grid_pos: Vector2i) -> void:
+	terrain.set_cell(grid_pos, TERRAIN_SOURCE_ID, Vector2i(Terrain.GRASS, 0))
+	_regrowth[grid_pos] = REGROW_TIME
 
 
 func get_cell_rect(grid_pos: Vector2i) -> Rect2:

@@ -1,6 +1,6 @@
 # 0009 — Core production buildings (woodcutter's lodge, storage barn, farm)
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M2 — Core Simulation Loop
 - **Depends on:** 0004, 0005, 0008
 
@@ -23,11 +23,18 @@ This ticket is where 0004 (stockpile), 0005 (construction), and 0008 (jobs) come
 - Visual harvesting animations beyond placeholder feedback.
 
 ## Acceptance criteria
-- [ ] Woodcutter's Lodge can be built, staffed, and reliably produces wood into the stockpile over time.
-- [ ] Farm can be built, staffed, and reliably produces food into the stockpile over time.
-- [ ] Storage Barn's role (gating stockpile capacity, or purely flavor) is implemented consistently with how it's documented.
-- [ ] Forest tiles behave consistently under repeated harvesting per the decided depletion/regrowth rule (no crashes, no permanently broken tiles).
-- [ ] A full playthrough is possible: build these three buildings, assign settlers, and watch wood/food accumulate without manual intervention beyond initial setup.
+- [x] Woodcutter's Lodge can be built, staffed, and reliably produces wood into the stockpile over time. (Real-time run with 2 woodcutters: wood 25 → 47 in ~55 s.)
+- [x] Farm can be built, staffed, and reliably produces food into the stockpile over time. (Same run, 2 farmers: food 20 → 63.)
+- [x] Storage Barn's role (gating stockpile capacity, or purely flavor) is implemented consistently with how it's documented. (Flavor only; see decisions.)
+- [x] Forest tiles behave consistently under repeated harvesting per the decided depletion/regrowth rule (no crashes, no permanently broken tiles). (Depleted tiles regrow after 120 s; an occupied tile waits until free.)
+- [x] A full playthrough is possible: build these three buildings, assign settlers, and watch wood/food accumulate without manual intervention beyond initial setup. (Lodge and farm built, 4 settlers assigned, wood and food rose. The storage barn is a stub, not needed for the loop.)
+
+## Decisions
+- Buildings are data: `resources/buildings/woodcutters_lodge.tres` (2x2, 10 wood, 5 s build, 2 woodcutter slots), `resources/buildings/farm.tres` (3x3, 15 wood, 8 s build, 3 farmer slots), and the existing `storage_barn.tres` (2x2, 10 wood). Jobs are `resources/jobs/woodcutter.tres` and `resources/jobs/farmer.tres`.
+- Woodcutter: harvests the nearest reachable forest tile. Each completed harvest gives 2 wood. The forest tile is depleted to grass and regrows to forest after 120 s. Depletion and regrowth live in `WorldGrid` (`deplete_forest`, `_process`). Regrowth waits while a building occupies the tile.
+- Farm: the farmer works at an access cell next to the farm. Each completed harvest gives 3 food. The single tunable rate is the job's `work_time` (6 s); seasons (0011) can scale it later.
+- Storage Barn: flavor only. The stockpile (0004) is global and unconditional, so the barn gates nothing.
+- Each harvest gives output only on completion, so cancellation cannot duplicate or lose partial output.
 
 ## Open questions
 - Does wood harvesting deplete/remove the forest tile (turning it to grass) with regrowth over time, or is it an infinite-yield node? Recommend depletion + slow regrowth, since it's closer to the Banished reference and gives forestry/sustainability tension later (forester's lodge replanting) without extra work now.

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="JobDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/job_def.gd" id="1_job"]
+
+[resource]
+script = ExtResource("1_job")
+job_name = "Woodcutter"
+slots = 2
+work_time = 4.0
+output_type = 0
+output_amount = 2
+target_terrain = "forest"
