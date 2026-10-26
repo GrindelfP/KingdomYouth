@@ -18,7 +18,10 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | Toggle placing mode | `B` (or click a button in the build menu) |
 | Change the building you are placing | `Tab` |
 | Place a building | Left-click while in placing mode |
+| Lay a road | Pick a road in the build menu, then drag with the left mouse button and release |
 | Stop placing | `Esc` or right-click |
+| Demolish a building, site, or road | `X` or the **Demolish** button, then left-click it |
+| Stop demolishing | `X` again, `Esc`, or right-click |
 | Pause / resume | `Space` or the `||` button |
 | Game speed | `1`, `2`, `3`, or the `>`, `>>`, `>>>` buttons |
 | Save the game | `F5` or the **Save** button |
@@ -48,8 +51,17 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | **Blacksmith** | 30 logs, 10 stone | 2x2 | 1 blacksmith. Turns 1 iron and 1 log into 1 tool. |
 | **Stockpile** | free | 4x4 | Stores 400 units of materials, fuel, and tools. |
 | **Storage Barn** | 40 logs, 20 stone | 3x3 | Stores 600 units of food, tools, and fuel. |
+| **Dirt Road** | free | 1 tile | Settlers walk 1.5x faster on it. |
+| **Stone Road** | 1 stone per tile | 1 tile | Settlers walk 2x faster on it. |
 
-Buildings go on grass only. You cannot build on forest, water, or rock, or on top of another building. Buildings also block walking, so settlers path around them. Settlers standing on a spot do not stop you building there; they just walk away.
+
+Buildings go on grass only. You cannot build on forest, water, or rock, or on top of another building or road. Buildings also block walking, so settlers path around them. Settlers standing on a spot do not stop you building there; they just walk away.
+
+The build menu is grouped into Roads, Storage, Housing, Food, Resources and Industry.
+
+Roads go on open grass only: not on forest (trees), water, rock, buildings, or construction sites. Drag from the first tile to the last; the road runs straight, then turns once in an L-shape. Tiles you cannot place are skipped. Stone roads need 1 stone per tile placed, and if you run short only the affordable tiles are built.
+
+Demolishing (`X`, then left-click) removes a construction site, a building, or a road tile. A site returns all its delivered materials. A finished building returns half its cost to storage, and anything stored inside it (goods in its storage, output, input or household) is moved to other storage. Residents become homeless and are rehoused in an empty house if one exists. Workers become laborers. Roads return nothing.
 
 ## Your first hour in the game
 
@@ -126,6 +138,7 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 - Keep enough laborers: they carry all construction materials and also haul workplace output. Too many jobs leaves nobody to deliver.
 - Build houses early: a couple can only have children in a house, and each new family needs an empty one.
 - Place fields and workplaces close to houses to shorten settler trips.
+- Lay roads between houses, storage and workplaces. Dirt roads cost nothing, stone roads cost one stone per tile, and settlers walk faster and prefer them. Demolish a building you no longer need with `X` to recover half its cost.
 - If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
 - Keep a woodcutter running and a blacksmith supplied with iron before the first winter.
 - Watch the firewood count in winter, and the log count when you build.

@@ -12,6 +12,7 @@ Balance growth against food, warmth, and shelter as the seasons change.
 - Settlers with needs (hunger, rest, warmth, health) who act on their own, age, form families in houses, have children and die of old age
 - Buildings: house, forester's lodge, gatherer's hut, hunting cabin, fishing dock, quarry, mine, crop fields (4x4, 6x6, 8x8), woodcutter, blacksmith, stockpile, storage barn
 - Physical storage: goods are hauled by settlers to storage with limited capacity
+- Roads: dirt roads (free) and stone roads (1 stone per tile) speed settlers up and attract their paths; demolish buildings, sites, or roads to get room back (buildings return half their cost)
 - Banished-style labor: laborers haul materials, builders construct, and you set profession counts
 - Crop fields with a seasonal lifecycle: plow and plant in spring, grow in summer, harvest in autumn, frost in winter
 - Seasons, a month/year calendar, and winter heating from each house's own firewood
@@ -43,6 +44,8 @@ godot --path .
 | Cancel a construction site (refunds delivered materials) | Right-click it, or `Delete` with it selected |
 | Professions panel | `P` or the **Professions** button |
 | Place a building | `B`, pick it in the build menu, then left-click |
+| Lay a road | Pick **Dirt road** or **Stone road** in the build menu, then drag with the left mouse button in a straight or L-shaped line; release to place |
+| Demolish a building, site, or road | `X` or the **Demolish** button, then left-click it. `Esc` or right-click stops demolishing |
 | Pause / resume | `Space` |
 | Game speed | `1` (normal), `2` (fast), `3` (fastest), or the top bar buttons |
 | Save / load | `F5` / `F9` |
