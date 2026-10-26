@@ -48,7 +48,9 @@ func _rebuild() -> void:
 
 
 func _build_settler_view(settler: Settler) -> void:
-	_add_title("Settler %d" % settler.display_id)
+	_add_title("%s (settler %d)" % [settler.given_name, settler.display_id])
+	_add_line("%s, %s, age %d" % [settler.get_stage_name(), "male" if settler.sex == Settler.Sex.MALE else "female", int(settler.age)])
+	_add_line("Partner: " + (settler.partner.given_name if settler.partner else "none"))
 	_add_line("Profession: " + Professions.display_name(settler.profession))
 	var task := settler.worker.get_state_name()
 	if settler.worker.building:
@@ -97,7 +99,7 @@ func _build_building_view(building: Building) -> void:
 			func() -> void: _labor.set_desired_workers(building, building.desired_workers - 1),
 			func() -> void: _labor.set_desired_workers(building, building.desired_workers + 1))
 		for worker_settler in building.workers:
-			_add_line("  Settler %d" % worker_settler.display_id)
+			_add_line("  %s" % worker_settler.given_name)
 		_add_work_area_lines(building)
 		if building.field:
 			_add_field_lines(building.field)
@@ -110,6 +112,8 @@ func _build_building_view(building: Building) -> void:
 		_add_inventory("Stored", building.storage)
 	if building.def.housing_capacity > 0:
 		_add_line("Residents %d / %d" % [building.residents.size(), building.def.housing_capacity])
+		for resident in building.residents:
+			_add_line("  %s (%s, %d)" % [resident.given_name, resident.get_stage_name().to_lower(), int(resident.age)])
 		_add_line("Heating: " + ("on" if building.is_heated() else "off"))
 		_add_inventory("Household", building.household)
 		_add_line("Food kinds: %d (%s)" % [building.diet_kinds(), _diet_text(building)])

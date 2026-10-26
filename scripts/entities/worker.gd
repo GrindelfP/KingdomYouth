@@ -124,6 +124,7 @@ func _plan() -> void:
 			_retry_left = RETRY_DELAY
 		return
 	if not _settler.is_working_age():
+		_plan_child()
 		return
 	var started := _plan_survival() or _plan_tool()
 	if started:
@@ -137,6 +138,21 @@ func _plan() -> void:
 			started = _plan_job()
 	if not started and _state == State.IDLE:
 		_retry_left = IDLE_RETRY if building == null else RETRY_DELAY
+
+
+func _plan_child() -> void:
+	var needs := _settler.needs
+	var home := _settler.home
+	var started := false
+	if needs.hunger >= Needs.EAT_HUNGER:
+		if home == null:
+			started = _plan_eat_at_storage()
+		elif home.food_stock() > 0 and _settler.is_at_home():
+			needs.try_eat()
+	if not started and home != null and not _settler.is_at_home():
+		started = _plan_go_home()
+	if not started and _state == State.IDLE:
+		_retry_left = IDLE_RETRY
 
 
 func serve_hunger() -> void:

@@ -33,7 +33,7 @@ func profession_ids() -> Array[StringName]:
 func get_count(profession: StringName) -> int:
 	var count := 0
 	for settler in _settlers.living_settlers():
-		if settler.profession == profession:
+		if settler.profession == profession and settler.is_working_age():
 			count += 1
 	return count
 
@@ -156,7 +156,7 @@ func _reference_cell() -> Vector2i:
 func _nearest_laborer(cell: Vector2i) -> Settler:
 	var best: Settler
 	for settler in _settlers.living_settlers():
-		if settler.profession != Professions.LABORER:
+		if settler.profession != Professions.LABORER or not settler.is_working_age():
 			continue
 		if best == null or _distance(settler.get_grid_pos(), cell) < _distance(best.get_grid_pos(), cell):
 			best = settler

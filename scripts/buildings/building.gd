@@ -32,7 +32,6 @@ const DIET_VARIETY_KINDS := 3
 
 var workers: Array[Settler] = []
 var residents: Array[Settler] = []
-var birth_cooldown := 0.0
 var heat_left := 0.0
 var desired_workers := 0
 var output_claimed := 0

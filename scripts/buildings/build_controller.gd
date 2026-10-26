@@ -229,7 +229,6 @@ func to_save_data() -> Array:
 				"origin": WorldGrid.cell_to_json(child.origin),
 				"heat_left": child.heat_left,
 				"desired_workers": child.desired_workers,
-				"birth_cooldown": child.birth_cooldown,
 				"storage": child.storage.to_save_data() if child.storage else {},
 				"output": child.output.to_save_data() if child.output else {},
 				"input": child.input.to_save_data() if child.input else {},
@@ -260,7 +259,6 @@ func from_save_data(entries: Array) -> void:
 			var building := add_building(def, origin)
 			building.heat_left = float(entry["heat_left"])
 			building.desired_workers = int(entry["desired_workers"])
-			building.birth_cooldown = float(entry["birth_cooldown"])
 			if building.storage:
 				building.storage.from_save_data(entry["storage"])
 			if building.output:

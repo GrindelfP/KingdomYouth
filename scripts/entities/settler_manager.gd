@@ -3,16 +3,26 @@ extends Node2D
 
 signal population_changed(count: int)
 signal settler_born(settler: Settler)
-signal settler_died(settler: Settler)
+signal settler_died(settler: Settler, old_age: bool)
+signal settler_grew_up(settler: Settler)
 
-const STARTING_SETTLER_COUNT := 5
+const STARTING_COUPLES := 3
+const STARTING_CHILDREN := 3
 const STARTING_BUILDERS := 2
+const START_ADULT_AGE := Vector2(18.0, 35.0)
+const START_CHILD_AGE := Vector2(2.0, 8.0)
 const POPULATION_TICK := 1.0
-const BIRTH_COOLDOWN := 45.0
+const MARRIAGE_AGE := 16.0
+const MOTHER_MAX_AGE := 50.0
+const BIRTH_CHANCE := 0.25
 const BIRTH_MIN_FOOD := 10
-const MIN_PARENTS := 2
+const OLD_AGE_LIMIT := 80.0
+const OLD_AGE_BASE_CHANCE := 0.005
+const OLD_AGE_RISE := 0.2
 const HEAT_DURATION := 20.0
 const FUEL_PER_HEATING := 1
+const MALE_NAMES := ["Alder", "Bram", "Cedric", "Dunstan", "Edmund", "Finn", "Godric", "Hale", "Ivo", "Jory", "Kellan", "Leofric", "Merrick", "Osric", "Piers", "Rowan", "Tobin", "Wystan"]
+const FEMALE_NAMES := ["Aelwen", "Brenna", "Cora", "Daisy", "Edda", "Freya", "Gwen", "Hild", "Isolde", "Joan", "Maud", "Nell", "Odette", "Petra", "Rosamund", "Sunniva", "Thea", "Wilma"]
 
 var _world: WorldGrid
 var _pathfinder: GridPathfinder
@@ -26,6 +36,7 @@ func _ready() -> void:
 	_pathfinder = get_parent().get_node("Pathfinder")
 	_buildings = get_parent().get_node("Buildings")
 	_world.map_generated.connect(_spawn_starting_settlers)
+	TimeManager.month_changed.connect(_on_month_changed)
 
 
 func _process(delta: float) -> void:
@@ -47,6 +58,13 @@ func employed_count() -> int:
 	return count
 
 
+func count_by_stage() -> Array[int]:
+	var counts: Array[int] = [0, 0, 0]
+	for settler in living_settlers():
+		counts[settler.get_age_stage()] += 1
+	return counts
+
+
 func _spawn_starting_settlers() -> void:
 	var bounds := _world.get_map_bounds()
 	var center := bounds.get_center()
@@ -57,10 +75,29 @@ func _spawn_starting_settlers() -> void:
 			if _world.is_walkable(grid_pos):
 				cells.append(grid_pos)
 	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.distance_squared_to(center) < b.distance_squared_to(center))
-	for i in mini(STARTING_SETTLER_COUNT, cells.size()):
-		var settler := _spawn_settler(cells[i])
-		if i < STARTING_BUILDERS:
+	var total := STARTING_COUPLES * 2 + STARTING_CHILDREN
+	if cells.size() < total:
+		return
+	var index := 0
+	var fathers: Array[Settler] = []
+	var mothers: Array[Settler] = []
+	for i in STARTING_COUPLES:
+		var father := _spawn_settler(cells[index], Settler.Sex.MALE, randf_range(START_ADULT_AGE.x, START_ADULT_AGE.y))
+		var mother := _spawn_settler(cells[index + 1], Settler.Sex.FEMALE, randf_range(START_ADULT_AGE.x, START_ADULT_AGE.y))
+		index += 2
+		father.partner = mother
+		mother.partner = father
+		fathers.append(father)
+		mothers.append(mother)
+	for i in STARTING_CHILDREN:
+		var child := _spawn_settler(cells[index], Settler.Sex.MALE if randf() < 0.5 else Settler.Sex.FEMALE, randf_range(START_CHILD_AGE.x, START_CHILD_AGE.y))
+		index += 1
+		child.parents = [fathers[i % fathers.size()], mothers[i % mothers.size()]]
+	var builders := 0
+	for settler in living_settlers():
+		if builders < STARTING_BUILDERS and settler.get_age_stage() == Settler.AgeStage.ADULT:
 			settler.profession = Professions.BUILDER
+			builders += 1
 
 
 func clear_settlers() -> void:
@@ -82,6 +119,11 @@ func to_save_data() -> Array:
 			"health": settler.needs.health,
 			"carried_id": String(settler.carried_id),
 			"carried_amount": settler.carried_amount,
+			"name": settler.given_name,
+			"sex": settler.sex,
+			"age": settler.age,
+			"partner": settler.partner.display_id if settler.partner else -1,
+			"parents": settler.parents.map(func(parent: Settler) -> int: return parent.display_id),
 			"profession": String(settler.profession),
 			"has_tool": settler.has_tool,
 			"tool_wear": settler.tool_wear,
@@ -93,8 +135,11 @@ func to_save_data() -> Array:
 
 func from_save_data(entries: Array, buildings: BuildController) -> void:
 	clear_settlers()
+	var by_id := {}
 	for entry in entries:
-		var settler := _spawn_settler(WorldGrid.cell_from_json(entry["cell"]))
+		var settler := _spawn_settler(WorldGrid.cell_from_json(entry["cell"]), int(entry["sex"]) as Settler.Sex, float(entry["age"]))
+		settler.given_name = String(entry["name"])
+		by_id[int(entry["display_id"])] = settler
 		settler.display_id = int(entry["display_id"])
 		_next_display_id = maxi(_next_display_id, settler.display_id + 1)
 		settler.needs.hunger = float(entry["hunger"])
@@ -115,10 +160,20 @@ func from_save_data(entries: Array, buildings: BuildController) -> void:
 			var job_building := buildings.find_building(WorldGrid.cell_from_json(entry["job"]))
 			if job_building:
 				settler.worker.assign(job_building)
+	for entry in entries:
+		var settler: Settler = by_id[int(entry["display_id"])]
+		if int(entry["partner"]) >= 0 and by_id.has(int(entry["partner"])):
+			settler.partner = by_id[int(entry["partner"])]
+		for parent_id in entry["parents"]:
+			if by_id.has(int(parent_id)):
+				settler.parents.append(by_id[int(parent_id)])
 
 
-func _spawn_settler(grid_pos: Vector2i) -> Settler:
+func _spawn_settler(grid_pos: Vector2i, sex: Settler.Sex, age: float) -> Settler:
 	var settler := Settler.new()
+	settler.sex = sex
+	settler.age = age
+	settler.given_name = _random_name(sex)
 	settler.display_id = _next_display_id
 	_next_display_id += 1
 	add_child(settler)
@@ -128,10 +183,32 @@ func _spawn_settler(grid_pos: Vector2i) -> Settler:
 	return settler
 
 
+func _random_name(sex: Settler.Sex) -> String:
+	var names: Array = MALE_NAMES if sex == Settler.Sex.MALE else FEMALE_NAMES
+	return names[randi() % names.size()]
+
+
 func _population_tick(dt: float) -> void:
-	_assign_homeless()
+	_update_housing()
 	_update_heating(dt)
-	_update_births(dt)
+
+
+func _on_month_changed(_month: int) -> void:
+	for settler in living_settlers():
+		var before := settler.get_age_stage()
+		settler.set_age(settler.age + 1.0 / TimeManager.MONTHS_PER_YEAR)
+		if before == Settler.AgeStage.CHILD and settler.is_working_age():
+			settler_grew_up.emit(settler)
+		elif settler.age >= Settler.ELDER_AGE and _dies_of_old_age(settler):
+			_remove_settler(settler, true)
+	_update_births()
+
+
+func _dies_of_old_age(settler: Settler) -> bool:
+	if settler.age >= OLD_AGE_LIMIT:
+		return true
+	var t := (settler.age - Settler.ELDER_AGE) / (OLD_AGE_LIMIT - Settler.ELDER_AGE)
+	return randf() < OLD_AGE_BASE_CHANCE + OLD_AGE_RISE * t * t
 
 
 func _update_heating(dt: float) -> void:
@@ -145,12 +222,116 @@ func _update_heating(dt: float) -> void:
 				house.heat_left = HEAT_DURATION
 
 
-func _assign_homeless() -> void:
+func _update_housing() -> void:
+	_pair_singles()
+	_house_couples()
+	_house_singles()
+	_house_followers()
+	_house_remaining()
+
+
+func _is_pairable(settler: Settler) -> bool:
+	if settler.partner != null or settler.get_age_stage() != Settler.AgeStage.ADULT or settler.age < MARRIAGE_AGE:
+		return false
+	return settler.home == null or settler.home.residents.size() == 1 or settler.lives_with_parent()
+
+
+func _is_lone(settler: Settler) -> bool:
+	return settler.home != null and settler.home.residents.size() == 1
+
+
+func _pair_singles() -> void:
+	var pool: Array[Settler] = []
 	for settler in living_settlers():
-		if settler.home == null:
-			var house := _house_with_room()
-			if house:
+		if _is_pairable(settler):
+			pool.append(settler)
+	for a in pool:
+		if a.partner != null:
+			continue
+		for b in pool:
+			if b == a or b.partner != null or b.sex == a.sex or a.is_kin_of(b):
+				continue
+			var house := _pair_house(a, b)
+			if house == null:
+				continue
+			a.partner = b
+			b.partner = a
+			for settler in [a, b]:
+				if settler.home != house:
+					settler.assign_home(house)
+			break
+
+
+func _pair_house(a: Settler, b: Settler) -> Building:
+	if a.home == b.home and a.home != null:
+		return null
+	if _is_lone(a):
+		return a.home
+	if _is_lone(b):
+		return b.home
+	return _empty_house()
+
+
+func _house_couples() -> void:
+	for settler in living_settlers():
+		var mate := settler.partner
+		if mate == null or settler.home != null or mate.home != null or settler.display_id > mate.display_id:
+			continue
+		var house := _empty_house()
+		if house == null:
+			return
+		settler.assign_home(house)
+		mate.assign_home(house)
+
+
+func _house_singles() -> void:
+	var candidates: Array[Settler] = []
+	for settler in living_settlers():
+		if settler.partner == null and settler.get_age_stage() == Settler.AgeStage.ADULT and settler.age >= MARRIAGE_AGE:
+			if settler.home == null:
+				candidates.push_front(settler)
+			elif settler.lives_with_parent():
+				candidates.append(settler)
+	for settler in candidates:
+		var house := _empty_house()
+		if house == null:
+			return
+		settler.assign_home(house)
+
+
+func _house_followers() -> void:
+	for settler in living_settlers():
+		if settler.home != null:
+			continue
+		var targets: Array[Building] = []
+		if settler.partner != null and settler.partner.home != null:
+			targets.append(settler.partner.home)
+		for parent in settler.parents:
+			if parent.home != null:
+				targets.append(parent.home)
+		for house in targets:
+			if house.has_free_housing():
 				settler.assign_home(house)
+				break
+
+
+func _house_remaining() -> void:
+	for settler in living_settlers():
+		if settler.home != null or settler.partner != null:
+			continue
+		var stage := settler.get_age_stage()
+		if stage == Settler.AgeStage.ADULT or (stage == Settler.AgeStage.CHILD and not settler.parents.is_empty()):
+			continue
+		var house := _house_with_room()
+		if house:
+			settler.assign_home(house)
+
+
+func _empty_house() -> Building:
+	for house in _houses():
+		if house.residents.is_empty():
+			return house
+	return null
 
 
 func _house_with_room() -> Building:
@@ -163,27 +344,45 @@ func _house_with_room() -> Building:
 	return best
 
 
-func _update_births(dt: float) -> void:
+func _update_births() -> void:
 	for house in _houses():
-		house.birth_cooldown = maxf(house.birth_cooldown - dt, 0.0)
-		if house.birth_cooldown > 0.0 or not house.has_free_housing():
+		if not house.has_free_housing() or house.food_stock() < BIRTH_MIN_FOOD:
 			continue
-		if house.residents.size() < MIN_PARENTS or house.food_stock() < BIRTH_MIN_FOOD:
+		var mother := _fertile_mother(house)
+		if mother == null or randf() >= BIRTH_CHANCE:
 			continue
 		var cells := house.get_access_cells()
 		if cells.is_empty():
 			continue
-		house.birth_cooldown = BIRTH_COOLDOWN
-		var newborn := _spawn_settler(cells[0])
+		var newborn := _spawn_settler(cells[0], Settler.Sex.MALE if randf() < 0.5 else Settler.Sex.FEMALE, 0.0)
+		newborn.parents = [mother, mother.partner]
 		newborn.assign_home(house)
 		settler_born.emit(newborn)
 
 
+func _fertile_mother(house: Building) -> Settler:
+	for settler in house.residents:
+		if settler.sex == Settler.Sex.FEMALE and settler.partner != null and settler.partner.home == house \
+				and settler.age >= MARRIAGE_AGE and settler.age < MOTHER_MAX_AGE:
+			return settler
+	return null
+
+
 func _on_settler_died(settler: Settler) -> void:
+	_remove_settler(settler, false)
+
+
+func _remove_settler(settler: Settler, old_age: bool) -> void:
+	if settler.is_queued_for_deletion():
+		return
+	for other in living_settlers():
+		if other.partner == settler:
+			other.partner = null
+		other.parents.erase(settler)
 	settler.worker.unassign()
 	settler.unassign_home()
 	settler.queue_free()
-	settler_died.emit(settler)
+	settler_died.emit(settler, old_age)
 	population_changed.emit(population())
 
 

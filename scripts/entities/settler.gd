@@ -4,6 +4,9 @@ extends Node2D
 signal arrived(grid_pos: Vector2i)
 signal path_failed(grid_pos: Vector2i)
 
+enum Sex { MALE, FEMALE }
+enum AgeStage { CHILD, ADULT, ELDER }
+
 const SPEED_TILES_PER_SECOND := 3.0
 const RADIUS := 6.0
 const COLOR := Color(0.95, 0.85, 0.6)
@@ -12,6 +15,12 @@ const REST_FULL := 95.0
 const CARRY_MARKER_SIZE := 6.0
 const TOOL_LIFETIME := 720.0
 const NO_TOOL_SPEED := 0.5
+const CHILD_AGE := 10.0
+const ELDER_AGE := 60.0
+const ELDER_SPEED := 0.7
+const CHILD_RADIUS := 4.0
+const FEMALE_COLOR := Color(0.95, 0.7, 0.7)
+const STAGE_NAMES := ["Child", "Adult", "Elder"]
 
 var world: WorldGrid
 var pathfinder: GridPathfinder
@@ -21,6 +30,11 @@ var buildings: BuildController
 var profession: StringName = Professions.LABORER
 var home: Building
 var display_id := 0
+var given_name := ""
+var sex := Sex.MALE
+var age := 20.0
+var partner: Settler
+var parents: Array[Settler] = []
 var carried_id: StringName
 var carried_amount := 0
 var has_tool := false
@@ -55,8 +69,39 @@ func get_grid_pos() -> Vector2i:
 	return _last_cell
 
 
+func get_age_stage() -> AgeStage:
+	if age < CHILD_AGE:
+		return AgeStage.CHILD
+	if age >= ELDER_AGE:
+		return AgeStage.ELDER
+	return AgeStage.ADULT
+
+
+func get_stage_name() -> String:
+	return STAGE_NAMES[get_age_stage()]
+
+
 func is_working_age() -> bool:
-	return true
+	return age >= CHILD_AGE
+
+
+func lives_with_parent() -> bool:
+	for parent in parents:
+		if home != null and parent.home == home:
+			return true
+	return false
+
+
+func is_kin_of(other: Settler) -> bool:
+	for parent in parents:
+		if other.parents.has(parent) or other == parent:
+			return true
+	return other.parents.has(self)
+
+
+func set_age(value: float) -> void:
+	age = value
+	queue_redraw()
 
 
 func needs_tool() -> bool:
@@ -64,7 +109,8 @@ func needs_tool() -> bool:
 
 
 func work_speed() -> float:
-	return 1.0 if has_tool else NO_TOOL_SPEED
+	var speed := 1.0 if has_tool else NO_TOOL_SPEED
+	return speed * ELDER_SPEED if get_age_stage() == AgeStage.ELDER else speed
 
 
 func wear_tool(seconds: float) -> void:
@@ -129,7 +175,10 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, RADIUS, COLOR)
+	var radius := RADIUS if is_working_age() else CHILD_RADIUS
+	draw_circle(Vector2.ZERO, radius, COLOR if sex == Sex.MALE else FEMALE_COLOR)
+	if get_age_stage() == AgeStage.ELDER:
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 16, Color(0.85, 0.85, 0.85), 1.5)
 	if carried_amount > 0:
 		var color := ResourceCatalog.get_def(carried_id).color
 		var marker := Vector2.ONE * CARRY_MARKER_SIZE

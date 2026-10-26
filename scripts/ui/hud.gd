@@ -87,6 +87,7 @@ func _ready() -> void:
 	_build.crops_lost.connect(func(building: Building, count: int) -> void: add_toast("Frost destroyed crops at %s: %d cells lost." % [building.origin, count]))
 	_settlers.settler_born.connect(_on_settler_born)
 	_settlers.settler_died.connect(_on_settler_died)
+	_settlers.settler_grew_up.connect(func(settler: Settler) -> void: add_toast("%s came of age." % settler.given_name))
 	TimeManager.season_changed.connect(_on_season_changed)
 	TimeManager.speed_changed.connect(_on_speed_changed)
 	_on_speed_changed(TimeManager.get_speed_index())
@@ -95,7 +96,10 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_time_label.text = "%s, Year %d" % [TimeManager.get_month_name(), TimeManager.get_year()]
 	_update_storage()
-	_population_label.text = "Population %d (working %d, builders %d)" % [_settlers.population(), _settlers.employed_count(), _labor.get_count(Professions.BUILDER)]
+	var stages := _settlers.count_by_stage()
+	_population_label.text = "Pop %d (%d adults, %d children, %d elders) | working %d, builders %d" % [
+		_settlers.population(), stages[Settler.AgeStage.ADULT], stages[Settler.AgeStage.CHILD], stages[Settler.AgeStage.ELDER],
+		_settlers.employed_count(), _labor.get_count(Professions.BUILDER)]
 
 
 func _update_storage() -> void:
@@ -247,11 +251,11 @@ func _on_construction_completed(building: Building) -> void:
 
 
 func _on_settler_born(settler: Settler) -> void:
-	add_toast("Settler %d was born." % settler.display_id)
+	add_toast("%s was born." % settler.given_name)
 
 
-func _on_settler_died(settler: Settler) -> void:
-	add_toast("Settler %d has died." % settler.display_id)
+func _on_settler_died(settler: Settler, old_age: bool) -> void:
+	add_toast("%s died of old age." % settler.given_name if old_age else "%s has died." % settler.given_name)
 
 
 func _on_season_changed(season: int) -> void:
