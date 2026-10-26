@@ -62,11 +62,20 @@ func _build_settler_view(settler: Settler) -> void:
 	_add_line("Home: " + home)
 	if settler.is_carrying():
 		_add_line("Carrying: %d %s" % [settler.carried_amount, ResourceCatalog.display_name(settler.carried_id)])
+	_add_line(_tool_text(settler))
 	_add_bar("Hunger", settler.needs.hunger)
 	_add_bar("Rest", settler.needs.rest)
 	_add_bar("Warmth", settler.needs.warmth)
 	_add_bar("Health", settler.needs.health)
 	_add_button("Close", _jobs.clear_selection)
+
+
+func _tool_text(settler: Settler) -> String:
+	if settler.has_tool:
+		return "Tool: %d%% worn" % roundi(settler.tool_wear * 100.0)
+	if settler.needs_tool():
+		return "Tool: none (works at half speed)"
+	return "Tool: none"
 
 
 func _build_site_view(site: ConstructionSite) -> void:
@@ -90,6 +99,8 @@ func _build_building_view(building: Building) -> void:
 		for worker_settler in building.workers:
 			_add_line("  Settler %d" % worker_settler.display_id)
 		_add_work_area_lines(building)
+		if building.input:
+			_add_inventory("Input", building.input)
 		_add_inventory("Output", building.output)
 		if building.is_output_blocked():
 			_add_line("Storage full: output cannot be hauled, work is stalled.")
@@ -98,6 +109,8 @@ func _build_building_view(building: Building) -> void:
 	if building.def.housing_capacity > 0:
 		_add_line("Residents %d / %d" % [building.residents.size(), building.def.housing_capacity])
 		_add_line("Heating: " + ("on" if building.is_heated() else "off"))
+		_add_inventory("Household", building.household)
+		_add_line("Food kinds: %d (%s)" % [building.diet_kinds(), _diet_text(building)])
 	_add_button("Close", _jobs.clear_selection)
 
 
@@ -116,6 +129,15 @@ func _add_work_area_lines(building: Building) -> void:
 		_add_line("Rock tiles nearby: %d" % world.count_terrain_in_radius("rock", center, job.rule_radius))
 	if job.density_cells > 0 or (TimeManager.is_cold() and job.winter_factor < 1.0):
 		_add_line("Work rate: %d%%" % roundi(building.work_efficiency() * 100.0))
+
+
+func _diet_text(house: Building) -> String:
+	var kinds := house.diet_kinds()
+	if kinds >= Building.DIET_VARIETY_KINDS:
+		return "varied, health bonus"
+	if kinds == 1:
+		return "monotonous, health penalty"
+	return "no effect"
 
 
 func _add_inventory(title: String, inventory: Inventory) -> void:

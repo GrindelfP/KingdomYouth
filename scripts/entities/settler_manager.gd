@@ -83,6 +83,8 @@ func to_save_data() -> Array:
 			"carried_id": String(settler.carried_id),
 			"carried_amount": settler.carried_amount,
 			"profession": String(settler.profession),
+			"has_tool": settler.has_tool,
+			"tool_wear": settler.tool_wear,
 			"home": WorldGrid.cell_to_json(settler.home.origin) if settler.home else null,
 			"job": WorldGrid.cell_to_json(settler.worker.building.origin) if settler.worker.building else null,
 		})
@@ -101,6 +103,8 @@ func from_save_data(entries: Array, buildings: BuildController) -> void:
 		settler.needs.health = float(entry["health"])
 		if int(entry["carried_amount"]) > 0 and ResourceCatalog.has(StringName(entry["carried_id"])):
 			settler.set_carried(StringName(entry["carried_id"]), int(entry["carried_amount"]))
+		settler.has_tool = bool(entry["has_tool"])
+		settler.tool_wear = float(entry["tool_wear"])
 		var profession := StringName(entry["profession"])
 		settler.profession = profession if profession == Professions.BUILDER else Professions.LABORER
 		if entry["home"] != null:
@@ -137,7 +141,7 @@ func _update_heating(dt: float) -> void:
 			continue
 		house.heat_left = maxf(house.heat_left - dt, 0.0)
 		if not house.is_heated() and house.residents.size() > 0:
-			if ResourceStockpile.remove(&"firewood", FUEL_PER_HEATING):
+			if house.household.take(Building.FUEL_ID, FUEL_PER_HEATING) > 0:
 				house.heat_left = HEAT_DURATION
 
 
@@ -164,7 +168,7 @@ func _update_births(dt: float) -> void:
 		house.birth_cooldown = maxf(house.birth_cooldown - dt, 0.0)
 		if house.birth_cooldown > 0.0 or not house.has_free_housing():
 			continue
-		if house.residents.size() < MIN_PARENTS or ResourceStockpile.get_food_total() < BIRTH_MIN_FOOD:
+		if house.residents.size() < MIN_PARENTS or house.food_stock() < BIRTH_MIN_FOOD:
 			continue
 		var cells := house.get_access_cells()
 		if cells.is_empty():

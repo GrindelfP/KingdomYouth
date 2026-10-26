@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/building_def.gd" id="1_def"]
+[ext_resource type="Resource" path="res://resources/jobs/woodcutter.tres" id="2_job"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"woodcutter"
+display_name = "Woodcutter"
+footprint = Vector2i(2, 2)
+cost = {
+&"logs": 20
+}
+build_time = 15.0
+job = ExtResource("2_job")

@@ -58,6 +58,34 @@ func take(id: StringName, amount: int) -> int:
 	return taken
 
 
+func category_total(category: ResourceDef.Category) -> int:
+	var sum := 0
+	for id in ResourceCatalog.ids_in_category(category):
+		sum += get_amount(id)
+	return sum
+
+
+func kind_count(category: ResourceDef.Category) -> int:
+	var count := 0
+	for id in ResourceCatalog.ids_in_category(category):
+		if get_amount(id) > 0:
+			count += 1
+	return count
+
+
+func take_best(category: ResourceDef.Category, amount: int) -> int:
+	var taken := 0
+	while taken < amount:
+		var best := &""
+		for id in ResourceCatalog.ids_in_category(category):
+			if get_amount(id) > 0 and (best == &"" or get_amount(id) > get_amount(best)):
+				best = id
+		if best == &"":
+			break
+		taken += take(best, 1)
+	return taken
+
+
 func to_save_data() -> Dictionary:
 	var data := {}
 	for id in _items:

@@ -27,6 +27,7 @@ var _reserved_id := &""
 var _reserved_amount := 0
 var _claimed_building: Building
 var _claimed_amount := 0
+var _claimed_house: Building
 
 
 func _ready() -> void:
@@ -100,12 +101,14 @@ func _process(delta: float) -> void:
 			else:
 				_plan()
 		State.WORK:
+			_settler.wear_tool(delta)
 			_work_left -= delta
 			if _work_left <= 0.0:
 				_finish_work()
 		State.BUILD:
 			if _site and _site.is_alive() and _site.is_ready():
-				_site.add_work(delta)
+				_settler.wear_tool(delta)
+				_site.add_work(delta * _settler.work_speed())
 			else:
 				_site = null
 				_state = State.IDLE
@@ -118,7 +121,11 @@ func _plan() -> void:
 			_state = State.IDLE
 			_retry_left = RETRY_DELAY
 		return
-	var started := false
+	if not _settler.is_working_age():
+		return
+	var started := _plan_survival() or _plan_tool()
+	if started:
+		return
 	match _settler.profession:
 		Professions.LABORER:
 			started = _plan_hauling() or _plan_rally()
@@ -130,12 +137,123 @@ func _plan() -> void:
 		_retry_left = IDLE_RETRY if building == null else RETRY_DELAY
 
 
+func serve_hunger() -> void:
+	if _state != State.TRAVEL and _state != State.WORK and _state != State.BUILD:
+		return
+	if _can_find_meal():
+		cancel_task()
+
+
+func _can_find_meal() -> bool:
+	var home := _settler.home
+	if home != null:
+		return home.food_stock() > 0 and not _settler.is_at_home()
+	return _nearest_food_storage() != null
+
+
+func _plan_survival() -> bool:
+	var needs := _settler.needs
+	var home := _settler.home
+	if needs.hunger >= Needs.EAT_HUNGER:
+		if home == null:
+			return _plan_eat_at_storage()
+		if home.food_stock() > 0:
+			if _settler.is_at_home():
+				needs.try_eat()
+			else:
+				return _plan_go_home()
+	if home != null:
+		return _plan_restock(home)
+	return false
+
+
+func _plan_go_home() -> bool:
+	_state = State.RETURN
+	if _hauler.walk_to_cell(_settler.get_home_cell(), _on_home_reached):
+		return true
+	_state = State.IDLE
+	return false
+
+
+func _plan_eat_at_storage() -> bool:
+	var storage := _nearest_food_storage()
+	if storage == null:
+		return false
+	_state = State.RETURN
+	if _hauler.walk_to(storage, _on_storage_meal.bind(storage.get_instance_id())):
+		return true
+	_state = State.IDLE
+	return false
+
+
+func _nearest_food_storage() -> Building:
+	var from := _settler.get_grid_pos()
+	var best: Building
+	for storage in ResourceStockpile.get_storages():
+		if storage.storage.category_total(ResourceDef.Category.FOOD) <= 0:
+			continue
+		if best == null or _manhattan(storage.get_center_cell(), from) < _manhattan(best.get_center_cell(), from):
+			best = storage
+	return best
+
+
+func _plan_restock(home: Building) -> bool:
+	if home.restock_claimed:
+		return false
+	var from := _settler.get_grid_pos()
+	var wanted: Array[StringName] = []
+	if home.needs_food():
+		wanted.append_array(_food_kinds_by_stock(home))
+	if home.needs_firewood():
+		wanted.append(Building.FUEL_ID)
+	for id in wanted:
+		var target := Building.FOOD_TARGET if id != Building.FUEL_ID else Building.FIREWOOD_TARGET
+		var have := home.household.get_amount(id) if id == Building.FUEL_ID else home.food_stock()
+		var amount := mini(mini(target - have, Building.RESTOCK_TRIP), home.household.free_space())
+		if amount <= 0:
+			continue
+		for source in ResourceStockpile.find_sources(id, from):
+			var trip := mini(amount, source.storage.get_amount(id))
+			home.restock_claimed = true
+			_claimed_house = home
+			_state = State.PICKUP
+			if _hauler.fetch(source, source.storage, id, trip, _on_restock_taken.bind(home.get_instance_id())):
+				return true
+			_release_claims()
+			_state = State.IDLE
+	return false
+
+
+func _food_kinds_by_stock(home: Building) -> Array[StringName]:
+	var kinds := ResourceCatalog.ids_in_category(ResourceDef.Category.FOOD)
+	kinds.sort_custom(func(a: StringName, b: StringName) -> bool:
+		return home.household.get_amount(a) < home.household.get_amount(b))
+	return kinds
+
+
+func _plan_tool() -> bool:
+	if not _settler.needs_tool():
+		return false
+	var from := _settler.get_grid_pos()
+	for source in ResourceStockpile.find_sources(Building.TOOL_ID, from):
+		_state = State.PICKUP
+		if _hauler.fetch(source, source.storage, Building.TOOL_ID, 1, _on_tool_taken):
+			return true
+		_state = State.IDLE
+	return false
+
+
 func _plan_job() -> bool:
 	if building == null:
 		return false
 	var job := building.job_def()
 	var target := NO_TARGET
-	var can_work := building.output.free_space() >= job.output_total() and building.work_efficiency() > 0.0
+	var output_ready := building.output.free_space() >= job.output_total() and building.work_efficiency() > 0.0
+	if output_ready and job.has_inputs() and not building.has_batch():
+		if _plan_input_trip():
+			return true
+		output_ready = false
+	var can_work := output_ready
 	if can_work:
 		target = _find_target()
 	var stored := building.output.total()
@@ -148,6 +266,21 @@ func _plan_job() -> bool:
 	_state = State.TRAVEL
 	_settler.move_to(target)
 	return true
+
+
+func _plan_input_trip() -> bool:
+	var id := building.missing_input()
+	if id == &"":
+		return false
+	var amount := building.input_trip_amount(id)
+	if amount <= 0:
+		return false
+	for source in ResourceStockpile.find_sources(id, _settler.get_grid_pos()):
+		_state = State.PICKUP
+		if _hauler.fetch(source, source.storage, id, mini(amount, source.storage.get_amount(id)), _on_input_taken):
+			return true
+		_state = State.IDLE
+	return false
 
 
 func _plan_hauling() -> bool:
@@ -320,6 +453,9 @@ func _release_claims() -> void:
 		_claimed_building.output_claimed = maxi(_claimed_building.output_claimed - _claimed_amount, 0)
 	_claimed_building = null
 	_claimed_amount = 0
+	if _claimed_house and is_instance_valid(_claimed_house):
+		_claimed_house.restock_claimed = false
+	_claimed_house = null
 
 
 func _return_carried() -> void:
@@ -327,7 +463,9 @@ func _return_carried() -> void:
 		return
 	var id := _settler.carried_id
 	var left := _settler.carried_amount
-	if building and building.output:
+	if building and building.input and building.def.job.input_amount(id) > 0:
+		left -= building.input.add(id, left)
+	elif building and building.output:
 		left -= building.output.add(id, left)
 	if left > 0:
 		ResourceStockpile.add(id, left)
@@ -337,6 +475,55 @@ func _return_carried() -> void:
 func _on_trip_done() -> void:
 	_state = State.IDLE
 	_retry_left = 0.0
+
+
+func _on_home_reached() -> void:
+	_settler.needs.try_eat()
+	_on_trip_done()
+
+
+func _on_storage_meal(storage_id: int) -> void:
+	var storage := instance_from_id(storage_id) as Building
+	if storage != null and storage.is_alive() and storage.storage != null:
+		_settler.needs.eat_from(storage.storage)
+	_on_trip_done()
+
+
+func _on_restock_taken(taken: int, house_id: int) -> void:
+	var house := instance_from_id(house_id) as Building
+	if taken <= 0 or house == null or not house.is_alive():
+		_release_claims()
+		_state = State.IDLE
+		return
+	_state = State.DELIVER
+	if not _hauler.deliver(house, house.household, _on_restock_delivered):
+		_release_claims()
+		_state = State.IDLE
+
+
+func _on_restock_delivered(_accepted: int) -> void:
+	_release_claims()
+	_state = State.IDLE
+
+
+func _on_tool_taken(taken: int) -> void:
+	if taken > 0:
+		_settler.set_carried(&"", 0)
+		_settler.equip_tool()
+	_state = State.IDLE
+
+
+func _on_input_taken(taken: int) -> void:
+	if taken <= 0 or building == null:
+		_state = State.IDLE
+		return
+	_state = State.DELIVER
+	if not _hauler.deliver(building, building.input, _on_input_delivered):
+		_state = State.IDLE
+
+
+func _on_input_delivered(_accepted: int) -> void:
+	_state = State.IDLE
 
 
 func _on_materials_taken(taken: int) -> void:
@@ -404,7 +591,7 @@ func _work_duration() -> float:
 	var job := building.job_def()
 	if _action == Action.PLANT:
 		return job.plant_time
-	return job.work_time / maxf(building.work_efficiency(), 0.1)
+	return job.work_time / (maxf(building.work_efficiency(), 0.1) * _settler.work_speed())
 
 
 func _finish_work() -> void:
@@ -421,6 +608,8 @@ func _finish_work() -> void:
 		Action.HARVEST:
 			if job.target_mode == JobDef.TargetMode.FOREST_CELL and world.get_terrain_name(_target) != "forest":
 				return
+	if job.has_inputs() and not building.consume_batch():
+		return
 	for entry in job.outputs:
 		if randf() <= float(entry["chance"]):
 			building.output.add(StringName(entry["id"]), int(entry["amount"]))

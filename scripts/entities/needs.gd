@@ -21,6 +21,10 @@ const REGEN_PER_SECOND := 0.5
 const WARMTH_DRAIN_PER_SECOND := 1.0
 const WARMTH_RECOVER_PER_SECOND := 5.0
 const COLD_DAMAGE_PER_SECOND := 0.5
+const COLD_CALL := 40.0
+const WARM_FULL := 90.0
+const DIET_BONUS := 0.2
+const DIET_PENALTY := 0.15
 
 var hunger := 50.0
 var rest := MAX_VALUE
@@ -29,6 +33,8 @@ var health := MAX_VALUE
 var at_home := false
 var warm := false
 var sheltered := false
+var diet_modifier := 0.0
+var meal_provider := Callable()
 
 var _accumulated := 0.0
 var _was_critical := false
@@ -52,7 +58,14 @@ func is_starving() -> bool:
 
 
 func try_eat() -> bool:
-	if not ResourceStockpile.remove_food(FOOD_PER_MEAL):
+	if not meal_provider.is_valid():
+		return false
+	var source: Inventory = meal_provider.call()
+	return source != null and eat_from(source)
+
+
+func eat_from(source: Inventory) -> bool:
+	if source.take_best(ResourceDef.Category.FOOD, FOOD_PER_MEAL) < FOOD_PER_MEAL:
 		return false
 	hunger = maxf(hunger - MEAL_RESTORE, 0.0)
 	return true
@@ -92,7 +105,7 @@ func _apply_health(dt: float) -> void:
 	elif not sheltered:
 		health -= EXPOSURE_DAMAGE_PER_SECOND * dt
 	else:
-		health = minf(health + REGEN_PER_SECOND * dt, MAX_VALUE)
+		health = minf(health + maxf(REGEN_PER_SECOND + diet_modifier, 0.05) * dt, MAX_VALUE)
 	health = maxf(health, 0.0)
 	if health <= 0.0 and not _is_dead:
 		_is_dead = true

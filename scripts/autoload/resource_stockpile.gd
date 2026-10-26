@@ -141,20 +141,6 @@ func get_food_total() -> int:
 	return get_category_total(ResourceDef.Category.FOOD)
 
 
-func remove_food(amount: int) -> bool:
-	assert(amount >= 0)
-	if get_food_total() < amount:
-		return false
-	var kinds := ResourceCatalog.ids_in_category(ResourceDef.Category.FOOD)
-	for i in amount:
-		var best: StringName = kinds[0]
-		for id in kinds:
-			if get_amount(id) > get_amount(best):
-				best = id
-		remove(best, 1)
-	return true
-
-
 func _by_distance(from: Vector2i) -> Array[Building]:
 	var result := _storages.duplicate()
 	result.sort_custom(func(a: Building, b: Building) -> bool:

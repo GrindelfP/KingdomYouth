@@ -24,8 +24,11 @@ func cancel() -> void:
 
 
 func walk_to(target: Structure, on_arrived: Callable) -> bool:
-	var cell := reachable_access_cell(target)
-	if cell == NO_TARGET:
+	return walk_to_cell(reachable_access_cell(target), on_arrived)
+
+
+func walk_to_cell(cell: Vector2i, on_arrived: Callable) -> bool:
+	if cell == NO_TARGET or not is_reachable(cell):
 		return false
 	_target = cell
 	_on_arrived = on_arrived

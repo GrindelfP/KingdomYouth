@@ -8,6 +8,7 @@ enum PlacementRule { NONE, NEAR_WATER, NEAR_ROCK }
 @export var slots := 1
 @export var work_time := 4.0
 @export var outputs: Array[Dictionary] = []
+@export var inputs: Array[Dictionary] = []
 @export var target_mode := TargetMode.ACCESS
 @export var work_radius := 0.0
 @export var density_cells := 0
@@ -29,6 +30,17 @@ func output_total() -> int:
 	for entry in outputs:
 		total += int(entry["amount"])
 	return total
+
+
+func has_inputs() -> bool:
+	return not inputs.is_empty()
+
+
+func input_amount(id: StringName) -> int:
+	for entry in inputs:
+		if StringName(entry["id"]) == id:
+			return int(entry["amount"])
+	return 0
 
 
 func primary_output() -> StringName:

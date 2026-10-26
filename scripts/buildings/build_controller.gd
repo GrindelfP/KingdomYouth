@@ -21,6 +21,8 @@ var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/quarry.tres"),
 	load("res://resources/buildings/mine.tres"),
 	load("res://resources/buildings/farm.tres"),
+	load("res://resources/buildings/woodcutter.tres"),
+	load("res://resources/buildings/blacksmith.tres"),
 	load("res://resources/buildings/stockpile.tres"),
 	load("res://resources/buildings/storage_barn.tres"),
 	load("res://resources/buildings/house.tres"),
@@ -213,6 +215,8 @@ func to_save_data() -> Array:
 				"birth_cooldown": child.birth_cooldown,
 				"storage": child.storage.to_save_data() if child.storage else {},
 				"output": child.output.to_save_data() if child.output else {},
+				"input": child.input.to_save_data() if child.input else {},
+				"household": child.household.to_save_data() if child.household else {},
 			})
 		elif child is ConstructionSite:
 			entries.append({
@@ -243,6 +247,10 @@ func from_save_data(entries: Array) -> void:
 				building.storage.from_save_data(entry["storage"])
 			if building.output:
 				building.output.from_save_data(entry["output"])
+			if building.input:
+				building.input.from_save_data(entry["input"])
+			if building.household:
+				building.household.from_save_data(entry["household"])
 
 
 func _find_free_origin(def: BuildingDef, near: Vector2i, avoid: Array[Vector2i]) -> Vector2i:
