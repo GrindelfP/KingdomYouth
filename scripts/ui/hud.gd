@@ -9,12 +9,14 @@ const SEASON_MESSAGES := [
 	"Autumn. Stock up before winter.",
 	"Winter. Farms rest and unheated settlers grow cold.",
 ]
+const SPEED_LABELS := ["||", ">", ">>", ">>>"]
 
 var _build: BuildController
 var _jobs: JobController
 var _settlers: SettlerManager
 var _resource_labels: Array[Label] = []
 var _time_label: Label
+var _speed_buttons: Array[Button] = []
 var _population_label: Label
 var _hint_label: Label
 var _toasts: VBoxContainer
@@ -67,12 +69,12 @@ func _ready() -> void:
 	_settlers.settler_born.connect(_on_settler_born)
 	_settlers.settler_died.connect(_on_settler_died)
 	TimeManager.season_changed.connect(_on_season_changed)
+	TimeManager.speed_changed.connect(_on_speed_changed)
+	_on_speed_changed(TimeManager.get_speed_index())
 
 
 func _process(_delta: float) -> void:
-	_time_label.text = "Day %d - %s (%d/%d)" % [
-		TimeManager.day, TimeManager.get_season_name(), TimeManager.get_day_in_season(), TimeManager.DAYS_PER_SEASON,
-	]
+	_time_label.text = "%s, Year %d" % [TimeManager.get_month_name(), TimeManager.get_year()]
 	_population_label.text = "Population %d (working %d)" % [_settlers.population(), _settlers.employed_count()]
 
 
@@ -111,6 +113,11 @@ func _build_top_bar() -> PanelContainer:
 	row.add_child(_population_label)
 	_time_label = _make_label()
 	row.add_child(_time_label)
+	for index in TimeManager.SPEEDS.size():
+		var button := _make_button(SPEED_LABELS[index], TimeManager.set_speed.bind(index))
+		button.toggle_mode = true
+		_speed_buttons.append(button)
+		row.add_child(button)
 	row.add_child(_make_button("Save", _save_game))
 	row.add_child(_make_button("Load", _load_game))
 	row.add_child(_make_button("New game", SaveManager.start_new_game))
@@ -123,6 +130,17 @@ func _make_button(text: String, action: Callable) -> Button:
 	button.focus_mode = Control.FOCUS_NONE
 	button.pressed.connect(action)
 	return button
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_pause"):
+		TimeManager.toggle_pause()
+	elif event.is_action_pressed("speed_1"):
+		TimeManager.set_speed(1)
+	elif event.is_action_pressed("speed_2"):
+		TimeManager.set_speed(2)
+	elif event.is_action_pressed("speed_3"):
+		TimeManager.set_speed(3)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -167,3 +185,8 @@ func _on_settler_died(settler: Settler) -> void:
 
 func _on_season_changed(season: int) -> void:
 	add_toast("%s. %s" % [TimeManager.SEASON_NAMES[season], SEASON_MESSAGES[season]])
+
+
+func _on_speed_changed(index: int) -> void:
+	for button_index in _speed_buttons.size():
+		_speed_buttons[button_index].button_pressed = button_index == index
