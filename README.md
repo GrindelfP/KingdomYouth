@@ -1,6 +1,6 @@
 # KingdomYouth
 
-A Banished-like settlement builder. You never control your settlers directly. You place buildings, assign settlers to jobs, and keep the stockpile healthy, while the settlers look after their own hunger, rest, and warmth.
+A Banished-like settlement builder. You never control your settlers directly. You place buildings, set how many settlers work in each profession, and keep the stockpile healthy, while the settlers look after their own hunger, rest, and warmth.
 
 Balance growth against food, warmth, and shelter as the seasons change.
 
@@ -12,7 +12,7 @@ Balance growth against food, warmth, and shelter as the seasons change.
 - Settlers with needs (hunger, rest, warmth, health) who act on their own
 - Buildings: house, woodcutter's lodge, farm, stockpile, storage barn
 - Physical storage: goods are hauled by settlers to storage with limited capacity
-- Job assignment by clicking settlers and buildings
+- Banished-style labor: laborers haul materials, builders construct, and you set profession counts
 - Seasons, a month/year calendar, and winter heating
 - Births, deaths, and a population that depends on housing and food
 - HUD with resource bar, build menu, info panel, and toasts
@@ -36,7 +36,9 @@ godot --path .
 | --- | --- |
 | Pan the camera | `W` `A` `S` `D` or arrow keys |
 | Zoom | Mouse wheel |
-| Select a settler or building | Left-click |
+| Select a settler, building, or construction site | Left-click |
+| Cancel a construction site (refunds delivered materials) | Right-click it, or `Delete` with it selected |
+| Professions panel | `P` or the **Professions** button |
 | Place a building | `B`, pick it in the build menu, then left-click |
 | Pause / resume | `Space` |
 | Game speed | `1` (normal), `2` (fast), `3` (fastest), or the top bar buttons |

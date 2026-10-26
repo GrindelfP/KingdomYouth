@@ -1,6 +1,6 @@
 # KingdomYouth — Quick Tutorial
 
-KingdomYouth is a settlement builder. You never control your settlers directly. You place buildings, assign settlers to jobs, and keep the stockpile healthy. Settlers look after their own hunger, rest, and warmth.
+KingdomYouth is a settlement builder. You never control your settlers directly. You place buildings, set how many settlers work in each profession, and keep the stockpile healthy. Settlers look after their own hunger, rest, and warmth.
 
 Run the game from the editor (`open -a Godot`, then Play), or from the terminal with `/Applications/Godot.app/Contents/MacOS/Godot --path .`.
 
@@ -11,7 +11,9 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | Pan the camera | `W` `A` `S` `D` or arrow keys |
 | Pan by dragging | Hold the middle mouse button and drag |
 | Zoom | Mouse wheel |
-| Select a settler or building | Left-click it |
+| Select a settler, building, or construction site | Left-click it |
+| Cancel a construction site | Right-click it, or `Delete` with it selected |
+| Open the Professions panel | `P` or the **Professions** button |
 | Clear the selection | Left-click empty ground, or `Esc` |
 | Toggle placing mode | `B` (or click a button in the build menu) |
 | Change the building you are placing | `Tab` |
@@ -25,7 +27,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 
 ## What you start with
 
-- 5 settlers, all homeless.
+- 5 settlers, all homeless: 2 builders and 3 laborers.
 - 80 logs, 30 stone, 10 iron, 40 firewood, 12 tools, 60 wheat, and 40 berries. The top bar shows logs, stone, iron, firewood, tools, and total food. Hover over Food to see each kind.
 - A free Stockpile (400 capacity) and a Storage Barn (600 capacity) near the middle of the map, holding the starting goods. The top bar shows the total used and available storage.
 - A map with forests, lakes, and rock. Your settlers start near the middle.
@@ -52,25 +54,27 @@ Pan with `WASD` and zoom with the mouse wheel. Find the forest, which is dark gr
 
 Click **House** in the build menu at the bottom left. The hint line at the top shows what you are placing and why a spot is not valid. Move the cursor over open grass. A green box means you can place it here. A red box means you cannot, with the reason shown. Left-click to place it.
 
-The house takes about 6 seconds to finish. When it is done, a toast appears in the top right. Homeless settlers move in automatically, up to 4 per house.
+Placing a building costs nothing right away. It becomes a construction site that needs materials first: laborers carry the cost from storage to the site (the site shows an orange materials bar), and once everything has arrived the builders start work (the white progress bar). A house takes 20 builder-seconds, so two builders finish it in about 10 seconds plus walking time. More builders build faster; with 0 builders nothing is built. You can place a building even when you lack the logs; the site just waits for materials.
+
+To cancel a site, right-click it or select it and press **Cancel construction** or `Delete`. Materials already delivered go back to storage.
+
+When it is done, a toast appears in the top right. Homeless settlers move in automatically, up to 4 per house.
 
 ### 3. Build a Woodcutter's Lodge near the forest
 
 Click **Woodcutter's Lodge**, then place it on grass close to the forest. Woodcutters walk to the nearest reachable forest tile, so closer is better.
 
-### 4. Assign woodcutters
+### 4. Staff the lodge
 
-1. Click one of your settlers (cream dots) to select it. The info panel appears on the right.
-2. Click the lodge. The panel now lists its workers and the idle settlers.
-3. Press **Assign** next to a settler. Do this for up to 2 settlers.
+You never assign settlers one by one. A finished workplace asks for its full number of workers and the town fills it from the laborers automatically. Select the lodge to change its **Desired workers** with `-` and `+` in the info panel.
 
-Assigned settlers walk to the forest, gather logs, and return to repeat the loop. Logs appear in the top bar.
+You can also open the **Professions** panel (`P`). Each row shows `assigned / max` for a profession, where max is the total slots in your built workplaces. `+` turns the nearest laborer into that profession, and `-` sends the farthest one back to being a laborer. Builders have no maximum; raise them to build faster.
 
-To take a settler off the job, select the building and press **Remove**, or select the settler and press **Unassign job**.
+Woodcutters walk to the forest, gather logs, and return to repeat the loop. Logs appear in the top bar. Laborers who have nothing to deliver also empty full workplace buffers into storage and wait near the storage buildings.
 
-### 5. Build a farm and assign farmers
+### 5. Build a farm and staff it
 
-Click **Farm** and place it on a 3x3 patch of grass. Then assign up to 3 settlers to it, the same way as in step 4. Food rises as farmers harvest and carry it to storage.
+Click **Farm** and place it on a 3x3 patch of grass. Up to 3 laborers become farmers once it is built, as in step 4. Food rises as farmers harvest and carry it to storage.
 
 Settlers eat from the shared food stock by themselves when they get hungry, taking from the most plentiful kind first. If food runs out, they starve and their health falls.
 
@@ -98,15 +102,16 @@ The top bar shows the current month and year, for example "Mid Summer, Year 2".
 
 ### 8. Save and reload
 
-Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers, buildings, construction progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
+Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers and their professions, buildings, construction deliveries and progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
 
 ## Tips
 
+- Keep enough laborers: they carry all construction materials and also haul workplace output. Too many jobs leaves nobody to deliver.
 - Build a house before your first birth is possible, since births need room.
 - Place the farm and lodge close to houses to shorten settler trips.
 - If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
 - Watch the firewood count in winter, and the log count when you build.
-- Use the info panel to check why a settler is idle. The job line shows **paused** when the settler is eating or resting.
+- Use the info panel to check why a settler is idle. The task line shows **paused** when the settler is eating or resting.
 - A forest tile that a woodcutter used will come back after 2 minutes, so a forest can last a long time if you spread woodcutters around.
 
 ## Known limits (for now)
