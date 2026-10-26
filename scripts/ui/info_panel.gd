@@ -99,6 +99,8 @@ func _build_building_view(building: Building) -> void:
 		for worker_settler in building.workers:
 			_add_line("  Settler %d" % worker_settler.display_id)
 		_add_work_area_lines(building)
+		if building.field:
+			_add_field_lines(building.field)
 		if building.input:
 			_add_inventory("Input", building.input)
 		_add_inventory("Output", building.output)
@@ -129,6 +131,23 @@ func _add_work_area_lines(building: Building) -> void:
 		_add_line("Rock tiles nearby: %d" % world.count_terrain_in_radius("rock", center, job.rule_radius))
 	if job.density_cells > 0 or (TimeManager.is_cold() and job.winter_factor < 1.0):
 		_add_line("Work rate: %d%%" % roundi(building.work_efficiency() * 100.0))
+
+
+func _add_field_lines(field: CropField) -> void:
+	_add_line("Crop: %s (%dx%d)" % [ResourceCatalog.display_name(field.crop), field.size, field.size])
+	if field.pending_crop != field.crop:
+		_add_line("Next spring: %s" % ResourceCatalog.display_name(field.pending_crop))
+	_add_line("Planted %d, ripe %d, harvested %d of %d cells" % [
+		field.planted_count(), field.count(CropField.CellState.RIPE),
+		field.count(CropField.CellState.HARVESTED), field.size * field.size])
+	var row := HBoxContainer.new()
+	for crop_id in CropField.CROP_IDS:
+		var button := Button.new()
+		button.text = ResourceCatalog.display_name(crop_id)
+		button.disabled = crop_id == field.pending_crop
+		button.pressed.connect(field.set_pending_crop.bind(crop_id))
+		row.add_child(button)
+	_content.add_child(row)
 
 
 func _diet_text(house: Building) -> String:

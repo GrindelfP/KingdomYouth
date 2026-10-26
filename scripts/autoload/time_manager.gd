@@ -17,7 +17,6 @@ const MONTH_NAMES := [
 	"Early Winter", "Mid Winter", "Late Winter",
 ]
 const SEASON_NAMES := ["Spring", "Summer", "Autumn", "Winter"]
-const FOOD_MULTIPLIERS := [1.0, 1.5, 1.0, 0.0]
 const SPEEDS := [0.0, 1.0, 2.0, 5.0]
 const DEFAULT_SPEED_INDEX := 1
 
@@ -95,8 +94,8 @@ func get_month_progress() -> float:
 	return _elapsed / SECONDS_PER_MONTH
 
 
-func food_multiplier() -> float:
-	return FOOD_MULTIPLIERS[get_season()]
+func get_time_months() -> float:
+	return month + get_month_progress()
 
 
 func is_cold() -> bool:

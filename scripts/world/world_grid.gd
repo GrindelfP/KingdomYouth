@@ -26,6 +26,7 @@ const NO_TREE := -1
 const ANY_STAGE := -2
 
 var _occupied: Dictionary = {}
+var _open: Dictionary = {}
 var _trees: Dictionary = {}
 var _tree_age: Dictionary = {}
 
@@ -60,7 +61,7 @@ func is_in_bounds(grid_pos: Vector2i) -> bool:
 
 
 func is_walkable(grid_pos: Vector2i) -> bool:
-	return _get_flag(grid_pos, "walkable") and not is_occupied(grid_pos)
+	return _get_flag(grid_pos, "walkable") and (not is_occupied(grid_pos) or _open.has(grid_pos))
 
 
 func is_buildable(grid_pos: Vector2i) -> bool:
@@ -74,6 +75,7 @@ func is_occupied(grid_pos: Vector2i) -> bool:
 func clear_occupancy() -> void:
 	var previous := _occupied.keys()
 	_occupied.clear()
+	_open.clear()
 	for grid_pos in previous:
 		walkability_changed.emit(grid_pos)
 
@@ -84,6 +86,16 @@ func set_occupied(grid_positions: Array[Vector2i], occupied: bool) -> void:
 			_occupied[grid_pos] = true
 		else:
 			_occupied.erase(grid_pos)
+			_open.erase(grid_pos)
+		walkability_changed.emit(grid_pos)
+
+
+func set_open(grid_positions: Array[Vector2i], open: bool) -> void:
+	for grid_pos in grid_positions:
+		if open:
+			_open[grid_pos] = true
+		else:
+			_open.erase(grid_pos)
 		walkability_changed.emit(grid_pos)
 
 

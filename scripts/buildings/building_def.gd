@@ -2,6 +2,7 @@ class_name BuildingDef
 extends Resource
 
 @export var id: StringName
+@export var family: StringName
 @export var display_name: String
 @export var footprint := Vector2i.ONE
 @export var cost: Dictionary = {}
@@ -18,6 +19,10 @@ func get_cells(origin: Vector2i) -> Array[Vector2i]:
 		for y in footprint.y:
 			cells.append(origin + Vector2i(x, y))
 	return cells
+
+
+func is_field() -> bool:
+	return job != null and job.target_mode == JobDef.TargetMode.FIELD
 
 
 func is_storage() -> bool:

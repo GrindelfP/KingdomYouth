@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BuildingDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/building_def.gd" id="1_def"]
+[ext_resource type="Resource" path="res://resources/jobs/farmer.tres" id="2_job"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"crop_field_6"
+family = &"crop_field"
+display_name = "Crop Field 6x6"
+footprint = Vector2i(6, 6)
+cost = {
+&"logs": 30
+}
+build_time = 35.0
+job = ExtResource("2_job")

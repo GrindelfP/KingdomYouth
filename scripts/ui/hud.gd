@@ -84,6 +84,7 @@ func _ready() -> void:
 	_build.hint_changed.connect(func(text: String) -> void: _hint_label.text = text)
 	_build.construction_completed.connect(_on_construction_completed)
 	_build.construction_cancelled.connect(func(def: BuildingDef) -> void: add_toast("Construction cancelled: %s. Delivered materials returned." % def.display_name))
+	_build.crops_lost.connect(func(building: Building, count: int) -> void: add_toast("Frost destroyed crops at %s: %d cells lost." % [building.origin, count]))
 	_settlers.settler_born.connect(_on_settler_born)
 	_settlers.settler_died.connect(_on_settler_died)
 	TimeManager.season_changed.connect(_on_season_changed)

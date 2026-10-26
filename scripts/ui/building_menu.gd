@@ -15,7 +15,7 @@ func setup(build: BuildController) -> void:
 		button.pressed.connect(build.select_building.bind(index))
 		column.add_child(button)
 	var help := Label.new()
-	help.text = "B toggles placing, Tab cycles, Esc cancels"
+	help.text = "B toggles placing, Tab cycles, R resizes fields, Esc cancels"
 	column.add_child(help)
 
 

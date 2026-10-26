@@ -2,7 +2,7 @@ class_name Worker
 extends Node
 
 enum State { IDLE, TRAVEL, WORK, PICKUP, DELIVER, BUILD, RETURN }
-enum Action { HARVEST, PLANT, CUT }
+enum Action { HARVEST, PLANT, CUT, PLOW, SOW, REAP }
 
 const NO_TARGET := Vector2i(-1, -1)
 const RETRY_DELAY := 3.0
@@ -28,6 +28,8 @@ var _reserved_amount := 0
 var _claimed_building: Building
 var _claimed_amount := 0
 var _claimed_house: Building
+var _claimed_field: Building
+var _field_cell := NO_TARGET
 
 
 func _ready() -> void:
@@ -259,6 +261,7 @@ func _plan_job() -> bool:
 	var stored := building.output.total()
 	if stored > 0 and (stored >= HAUL_SIZE or target == NO_TARGET):
 		if _begin_pickup():
+			_release_field_claim()
 			return true
 	if target == NO_TARGET:
 		return false
@@ -388,11 +391,36 @@ func _find_target() -> Vector2i:
 			return _first_reachable(forest)
 		JobDef.TargetMode.FORESTER:
 			return _find_forester_target(job)
+		JobDef.TargetMode.FIELD:
+			return _find_field_target()
 	_action = Action.HARVEST
 	for cell in building.get_access_cells():
 		if _hauler.is_reachable(cell):
 			return cell
 	return NO_TARGET
+
+
+func _find_field_target() -> Vector2i:
+	var field := building.field
+	var from := building.grid_to_field_cell(_settler.get_grid_pos())
+	var pick := field.next_task(from, TimeManager.get_season() == TimeManager.Season.SPRING)
+	if pick["task"] == CropField.Task.NONE:
+		return NO_TARGET
+	var cell: Vector2i = pick["cell"]
+	var grid_cell := building.field_cell_to_grid(cell)
+	if not _hauler.is_reachable(grid_cell):
+		return NO_TARGET
+	field.claim(cell)
+	_claimed_field = building
+	_field_cell = cell
+	match pick["task"]:
+		CropField.Task.REAP:
+			_action = Action.REAP
+		CropField.Task.SOW:
+			_action = Action.SOW
+		_:
+			_action = Action.PLOW
+	return grid_cell
 
 
 func _find_forester_target(job: JobDef) -> Vector2i:
@@ -456,6 +484,14 @@ func _release_claims() -> void:
 	if _claimed_house and is_instance_valid(_claimed_house):
 		_claimed_house.restock_claimed = false
 	_claimed_house = null
+	_release_field_claim()
+
+
+func _release_field_claim() -> void:
+	if _claimed_field and is_instance_valid(_claimed_field) and _claimed_field.field:
+		_claimed_field.field.release(_field_cell)
+	_claimed_field = null
+	_field_cell = NO_TARGET
 
 
 func _return_carried() -> void:
@@ -582,6 +618,7 @@ func _on_path_failed(grid_pos: Vector2i) -> void:
 		return
 	if _state == State.IDLE or grid_pos != _target:
 		return
+	_release_field_claim()
 	_state = State.IDLE
 	_target = NO_TARGET
 	_retry_left = RETRY_DELAY
@@ -589,14 +626,24 @@ func _on_path_failed(grid_pos: Vector2i) -> void:
 
 func _work_duration() -> float:
 	var job := building.job_def()
-	if _action == Action.PLANT:
-		return job.plant_time
+	match _action:
+		Action.PLANT:
+			return job.plant_time
+		Action.PLOW:
+			return job.plow_time / _settler.work_speed()
+		Action.SOW:
+			return job.plant_time / _settler.work_speed()
+		Action.REAP:
+			return job.work_time / _settler.work_speed()
 	return job.work_time / (maxf(building.work_efficiency(), 0.1) * _settler.work_speed())
 
 
 func _finish_work() -> void:
 	var job := building.job_def()
 	var world := _settler.world
+	if _action == Action.PLOW or _action == Action.SOW or _action == Action.REAP:
+		_finish_field_work(job)
+		return
 	_state = State.IDLE
 	match _action:
 		Action.PLANT:
@@ -613,3 +660,21 @@ func _finish_work() -> void:
 	for entry in job.outputs:
 		if randf() <= float(entry["chance"]):
 			building.output.add(StringName(entry["id"]), int(entry["amount"]))
+
+
+func _finish_field_work(job: JobDef) -> void:
+	var field := building.field
+	_state = State.IDLE
+	match _action:
+		Action.PLOW:
+			if field.plow(_field_cell) and TimeManager.get_season() == TimeManager.Season.SPRING:
+				_action = Action.SOW
+				_state = State.WORK
+				_work_left = _work_duration()
+				return
+		Action.SOW:
+			field.sow(_field_cell)
+		Action.REAP:
+			if field.reap(_field_cell):
+				building.output.add(field.crop, int(job.outputs[0]["amount"]))
+	_release_field_claim()

@@ -1,7 +1,7 @@
 class_name JobDef
 extends Resource
 
-enum TargetMode { ACCESS, FOREST_CELL, FORESTER }
+enum TargetMode { ACCESS, FOREST_CELL, FORESTER, FIELD }
 enum PlacementRule { NONE, NEAR_WATER, NEAR_ROCK }
 
 @export var job_name: String
@@ -13,11 +13,11 @@ enum PlacementRule { NONE, NEAR_WATER, NEAR_ROCK }
 @export var work_radius := 0.0
 @export var density_cells := 0
 @export var winter_factor := 1.0
-@export var seasonal := false
 @export var placement_rule := PlacementRule.NONE
 @export var rule_radius := 3
 @export var rule_min_cells := 4
 @export var plant_time := 3.0
+@export var plow_time := 2.5
 @export var forest_density := 0.6
 
 

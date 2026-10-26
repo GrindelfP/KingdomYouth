@@ -4,6 +4,7 @@ extends Node2D
 signal hint_changed(text: String)
 signal construction_completed(building: Building)
 signal construction_cancelled(def: BuildingDef)
+signal crops_lost(building: Building, count: int)
 
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
@@ -20,7 +21,9 @@ var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/fishing_dock.tres"),
 	load("res://resources/buildings/quarry.tres"),
 	load("res://resources/buildings/mine.tres"),
-	load("res://resources/buildings/farm.tres"),
+	load("res://resources/buildings/crop_field_4.tres"),
+	load("res://resources/buildings/crop_field_6.tres"),
+	load("res://resources/buildings/crop_field_8.tres"),
 	load("res://resources/buildings/woodcutter.tres"),
 	load("res://resources/buildings/blacksmith.tres"),
 	load("res://resources/buildings/stockpile.tres"),
@@ -50,6 +53,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_placing = not _placing
 	elif event.is_action_pressed("build_cycle"):
 		_selected = (_selected + 1) % building_defs.size()
+	elif event.is_action_pressed("build_size") and _placing:
+		cycle_size()
 	elif event.is_action_pressed("cancel_build") and _placing:
 		_placing = false
 	elif event.is_action_pressed("place_building") and _placing:
@@ -69,6 +74,17 @@ func is_placing() -> bool:
 func select_building(index: int) -> void:
 	_selected = index
 	_placing = true
+
+
+func cycle_size() -> void:
+	var family := selected_def().family
+	if family == &"":
+		return
+	for step in range(1, building_defs.size()):
+		var index := (_selected + step) % building_defs.size()
+		if building_defs[index].family == family:
+			_selected = index
+			return
 
 
 func cancel_placement() -> void:
@@ -142,6 +158,7 @@ func add_building(def: BuildingDef, origin: Vector2i) -> Building:
 	var building := Building.new()
 	add_child(building)
 	building.setup(_world, def, origin)
+	_watch(building)
 	return building
 
 
@@ -217,6 +234,7 @@ func to_save_data() -> Array:
 				"output": child.output.to_save_data() if child.output else {},
 				"input": child.input.to_save_data() if child.input else {},
 				"household": child.household.to_save_data() if child.household else {},
+				"field": child.field.to_save_data() if child.field else {},
 			})
 		elif child is ConstructionSite:
 			entries.append({
@@ -251,6 +269,8 @@ func from_save_data(entries: Array) -> void:
 				building.input.from_save_data(entry["input"])
 			if building.household:
 				building.household.from_save_data(entry["household"])
+			if building.field:
+				building.field.from_save_data(entry["field"])
 
 
 func _find_free_origin(def: BuildingDef, near: Vector2i, avoid: Array[Vector2i]) -> Vector2i:
@@ -287,10 +307,15 @@ func _def_by_id(id: String) -> BuildingDef:
 	return null
 
 
+func _watch(building: Building) -> void:
+	building.crops_lost.connect(func(count: int) -> void: crops_lost.emit(building, count))
+
+
 func _on_site_completed(site: ConstructionSite) -> void:
 	var building := Building.new()
 	add_child(building)
 	building.setup(_world, site.def, site.origin)
+	_watch(building)
 	site.queue_free()
 	construction_completed.emit(building)
 
