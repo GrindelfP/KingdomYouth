@@ -27,7 +27,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 
 ## What you start with
 
-- 5 settlers, all homeless: 2 builders and 3 laborers.
+- 9 settlers, all homeless: 3 couples (2 of the adults start as builders) and 3 children. Each settler has a name, age and sex.
 - 80 logs, 30 stone, 10 iron, 40 firewood, 12 tools, 60 wheat, and 40 berries. The top bar shows logs, stone, iron, firewood, tools, and total food. Hover over Food to see each kind.
 - A free Stockpile (400 capacity) and a Storage Barn (600 capacity) near the middle of the map, holding the starting goods. The top bar shows the total used and available storage.
 - A map with forests, lakes, and rock. Your settlers start near the middle.
@@ -36,7 +36,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 
 | Building | Cost | Size | What it does |
 | --- | --- | --- | --- |
-| **House** | 15 logs | 2x2 | Holds 4 settlers. Settlers with a home rest there, eat there, stay warm in winter, and can have children. Each house keeps its own food and firewood. |
+| **House** | 15 logs | 2x2 | Holds one family of up to 5. Settlers with a home rest there, eat there, stay warm in winter, and a couple living there can have children. Each house keeps its own food and firewood. |
 | **Forester's Lodge** | 20 logs | 2x2 | 2 foresters. Work radius 8 tiles. Cuts mature trees (3 logs each) and plants saplings on free grass so the forest stays at about 60% density. |
 | **Gatherer's Hut** | 15 logs | 2x2 | 2 gatherers. Radius 8. Collects berries and some mushrooms in forest tiles; faster the more forest is in range (full speed at 40 forest tiles). Stops in winter. |
 | **Hunting Cabin** | 25 logs | 2x2 | 2 hunters. Radius 10. Venison from forest tiles in range (full speed at 60 forest tiles); half speed in winter. |
@@ -65,7 +65,7 @@ Placing a building costs nothing right away. It becomes a construction site that
 
 To cancel a site, right-click it or select it and press **Cancel construction** or `Delete`. Materials already delivered go back to storage.
 
-When it is done, a toast appears in the top right. Homeless settlers move in automatically, up to 4 per house.
+When it is done, a toast appears in the top right. A homeless family moves in automatically: one couple (and their children) per empty house, or two single adults who pair up. Houses are the brake on growth: with no free house, nobody new moves in.
 
 ### 3. Build a Forester's Lodge near the forest
 
@@ -100,7 +100,7 @@ Select a settler to see its needs:
 - **Warmth** only matters in winter (see below).
 - **Health** falls when settlers starve, get cold, or have no home. It recovers when they are fed and housed. At 0 a settler dies.
 
-Births happen when a house has at least 2 settlers, room for another, and at least 10 food in the house. A newborn appears about every 45 seconds per house.
+Settlers age one year per game year. Children (under 10) do not work, haul or build; they stay at home and eat from the household, so a baby boom costs food before it adds labor. At 10 they become laborers. From 60 they are elders: they work at 70% speed and have a rising chance each month to die of old age, certain by 80. Each month a couple with room in their house, at least 10 food there and a mother under 50 has a 25% chance of a child. Grown children pair up with unrelated singles and move into an empty house, or stay with their parents until one is free. The top bar shows `Pop N (adults, children, elders)`; select a settler to see name, age, stage and partner, and a house to see who lives there.
 
 ### 7. Prepare for winter
 
@@ -119,12 +119,12 @@ The top bar shows the current month and year, for example "Mid Summer, Year 2".
 
 ### 9. Save and reload
 
-Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers, their tools, professions, buildings, household stocks, construction deliveries and progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
+Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers (with ages, families and homes), their tools, professions, buildings, household stocks, construction deliveries and progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
 
 ## Tips
 
 - Keep enough laborers: they carry all construction materials and also haul workplace output. Too many jobs leaves nobody to deliver.
-- Build a house before your first birth is possible, since births need room.
+- Build houses early: a couple can only have children in a house, and each new family needs an empty one.
 - Place fields and workplaces close to houses to shorten settler trips.
 - If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
 - Keep a woodcutter running and a blacksmith supplied with iron before the first winter.

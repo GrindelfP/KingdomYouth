@@ -9,7 +9,7 @@ Balance growth against food, warmth, and shelter as the seasons change.
 ## Features
 
 - Top-down 2D tile-grid world with forests, lakes, and rock
-- Settlers with needs (hunger, rest, warmth, health) who act on their own
+- Settlers with needs (hunger, rest, warmth, health) who act on their own, age, form families in houses, have children and die of old age
 - Buildings: house, forester's lodge, gatherer's hut, hunting cabin, fishing dock, quarry, mine, crop fields (4x4, 6x6, 8x8), woodcutter, blacksmith, stockpile, storage barn
 - Physical storage: goods are hauled by settlers to storage with limited capacity
 - Banished-style labor: laborers haul materials, builders construct, and you set profession counts
