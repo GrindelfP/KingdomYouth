@@ -6,6 +6,8 @@ signal season_applied(season: int, animate: bool)
 const TILE := 32
 const GROUND_TEXTURE: Texture2D = preload("res://assets/art/terrain/ground.png")
 const SHORE_TEXTURE: Texture2D = preload("res://assets/art/terrain/shore.png")
+const BLEED_TEXTURE: Texture2D = preload("res://assets/art/terrain/bleed.png")
+const BLEED_VARIANTS := 4
 const GROUND_COLUMNS := 12
 const FLIPPABLE_COLUMNS := 10
 const FOREST_COLUMN := 6
@@ -25,14 +27,20 @@ const CORNERS: Array[Vector2i] = [Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 
 class Stack:
 	extends Node2D
 	var ground: TileMapLayer
+	var bleed: Array[TileMapLayer] = []
 	var shore: TileMapLayer
 	var roads: RoadLayer
 
-	func _init(ground_set: TileSet, shore_set: TileSet) -> void:
+	func _init(ground_set: TileSet, bleed_set: TileSet, shore_set: TileSet) -> void:
 		z_index = -10
 		ground = TileMapLayer.new()
 		ground.tile_set = ground_set
 		add_child(ground)
+		for kind in 2:
+			var layer := TileMapLayer.new()
+			layer.tile_set = bleed_set
+			add_child(layer)
+			bleed.append(layer)
 		shore = TileMapLayer.new()
 		shore.tile_set = shore_set
 		add_child(shore)
@@ -49,6 +57,7 @@ var _col := PackedInt32Array()
 var _alt := PackedInt32Array()
 var _shore_index := PackedInt32Array()
 var _shore_row := PackedByteArray()
+var _bleed_index: Array[PackedInt32Array] = [PackedInt32Array(), PackedInt32Array()]
 var _water_cells: Array[int] = []
 var _phase := 0
 var _tone_noise := FastNoiseLite.new()
@@ -61,8 +70,9 @@ func _ready() -> void:
 	_tone_noise.frequency = TONE_FREQUENCY
 	var ground_set := _make_tileset(GROUND_TEXTURE, GROUND_COLUMNS, 4, FLIPPABLE_COLUMNS)
 	var shore_set := _make_tileset(SHORE_TEXTURE, ShoreMask.keys().size(), 8, 0)
+	var bleed_set := _make_tileset(BLEED_TEXTURE, ShoreMask.keys().size(), 4 * 2 * BLEED_VARIANTS, 0)
 	for index in 2:
-		var stack := Stack.new(ground_set, shore_set)
+		var stack := Stack.new(ground_set, bleed_set, shore_set)
 		stack.roads.setup(_world)
 		stack.visible = index == 0
 		add_child(stack)
@@ -151,6 +161,8 @@ func _assign_cells() -> void:
 	_alt.resize(total)
 	_shore_index.resize(total)
 	_shore_row.resize(total)
+	for kind in 2:
+		_bleed_index[kind].resize(total)
 	_water_cells.clear()
 	for y in range(bounds.position.y, bounds.end.y):
 		for x in range(bounds.position.x, bounds.end.x):
@@ -158,6 +170,7 @@ func _assign_cells() -> void:
 			var i := _index_of(cell)
 			_choose_variant(cell)
 			_assign_shore(cell)
+			_assign_bleed(cell)
 			if _col[i] >= WATER_COLUMN:
 				_water_cells.append(i)
 
@@ -222,6 +235,46 @@ func _assign_shore(cell: Vector2i) -> void:
 	_shore_row[i] = 1 if is_water else 0
 
 
+func _terrain_rank(cell: Vector2i) -> int:
+	if not _world.is_in_bounds(cell):
+		return -1
+	match _world.get_terrain_name(cell):
+		"forest": return 1
+		"rock": return 2
+		"water": return -1
+	return 0
+
+
+func _assign_bleed(cell: Vector2i) -> void:
+	var i := _index_of(cell)
+	var rank := _terrain_rank(cell)
+	for kind in 2:
+		var index := -1
+		if rank >= 0 and rank < kind + 1:
+			var sides := 0
+			var corners := 0
+			for bit in 4:
+				if _terrain_rank(cell + SIDES[bit]) == kind + 1:
+					sides |= 1 << bit
+				if _terrain_rank(cell + CORNERS[bit]) == kind + 1:
+					corners |= 1 << bit
+			var key := ShoreMask.key(sides, corners)
+			if key != 0:
+				index = ShoreMask.index_of(key)
+		_bleed_index[kind][i] = index
+
+
+func _paint_bleed(stack: Stack, cell: Vector2i, season: int) -> void:
+	var i := _index_of(cell)
+	var variant := (_hash(cell, 77) >> 4) % BLEED_VARIANTS
+	for kind in 2:
+		var index := _bleed_index[kind][i]
+		if index < 0:
+			stack.bleed[kind].erase_cell(cell)
+		else:
+			stack.bleed[kind].set_cell(cell, 0, Vector2i(index, (season * 2 + kind) * BLEED_VARIANTS + variant))
+
+
 func _differs(cell: Vector2i, is_water: bool) -> bool:
 	if not _world.is_in_bounds(cell):
 		return false
@@ -235,10 +288,19 @@ func _on_cell_changed(cell: Vector2i) -> void:
 	var i := _index_of(cell)
 	for stack in _stacks:
 		stack.ground.set_cell(cell, 0, Vector2i(_tile_column(i), _season), _alt[i] & 1 if _season == WINTER else _alt[i])
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var near := cell + Vector2i(dx, dy)
+			if _world.is_in_bounds(near):
+				_assign_bleed(near)
+				for stack in _stacks:
+					_paint_bleed(stack, near, _season)
 
 
 func _paint(stack: Stack, season: int) -> void:
 	stack.shore.clear()
+	for layer in stack.bleed:
+		layer.clear()
 	var bounds := _world.get_map_bounds()
 	for y in range(bounds.position.y, bounds.end.y):
 		for x in range(bounds.position.x, bounds.end.x):
@@ -246,6 +308,7 @@ func _paint(stack: Stack, season: int) -> void:
 			var i := _index_of(cell)
 			var alt := _alt[i] & 1 if season == WINTER else _alt[i]
 			stack.ground.set_cell(cell, 0, Vector2i(_tile_column(i), season), alt)
+			_paint_bleed(stack, cell, season)
 			if _shore_index[i] >= 0:
 				stack.shore.set_cell(cell, 0, Vector2i(_shore_index[i], season * 2 + _shore_row[i]))
 	stack.roads.season = season
