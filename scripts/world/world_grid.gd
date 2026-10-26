@@ -5,8 +5,10 @@ signal map_generated
 signal walkability_changed(grid_pos: Vector2i)
 signal trees_changed(grid_pos: Vector2i)
 signal trees_reloaded
+signal roads_changed(grid_pos: Vector2i)
 
 enum Terrain { GRASS, FOREST, WATER, ROCK }
+enum Road { NONE, DIRT, STONE }
 
 const MAP_RECT := Rect2i(Vector2i.ZERO, Vector2i(64, 64))
 const TERRAIN_SOURCE_ID := 0
@@ -24,11 +26,13 @@ const STAGE_MATURE := 2
 const MONTHS_PER_STAGE := 2
 const NO_TREE := -1
 const ANY_STAGE := -2
+const ROAD_SPEED_MULTIPLIERS := {Road.DIRT: 1.5, Road.STONE: 2.0}
 
 var _occupied: Dictionary = {}
 var _open: Dictionary = {}
 var _trees: Dictionary = {}
 var _tree_age: Dictionary = {}
+var _roads: Dictionary = {}
 
 var terrain: TileMapLayer:
 	get:
@@ -40,6 +44,10 @@ func _ready() -> void:
 	TimeManager.month_changed.connect(_on_month_changed)
 	_generate_map()
 	_reset_trees()
+	var road_layer := RoadLayer.new()
+	add_child(road_layer)
+	move_child(road_layer, terrain.get_index() + 1)
+	road_layer.setup(self)
 	map_generated.emit()
 
 
@@ -65,7 +73,7 @@ func is_walkable(grid_pos: Vector2i) -> bool:
 
 
 func is_buildable(grid_pos: Vector2i) -> bool:
-	return _get_flag(grid_pos, "buildable") and not is_occupied(grid_pos)
+	return _get_flag(grid_pos, "buildable") and not is_occupied(grid_pos) and get_road(grid_pos) == Road.NONE
 
 
 func is_occupied(grid_pos: Vector2i) -> bool:
@@ -99,6 +107,33 @@ func set_open(grid_positions: Array[Vector2i], open: bool) -> void:
 		walkability_changed.emit(grid_pos)
 
 
+func get_road(grid_pos: Vector2i) -> Road:
+	return _roads.get(grid_pos, Road.NONE) as Road
+
+
+func get_road_cells() -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	cells.assign(_roads.keys())
+	return cells
+
+
+func set_road(grid_pos: Vector2i, type: Road) -> void:
+	if type == Road.NONE:
+		_roads.erase(grid_pos)
+	else:
+		_roads[grid_pos] = type
+	roads_changed.emit(grid_pos)
+
+
+func can_place_road(grid_pos: Vector2i, type: Road) -> bool:
+	return is_in_bounds(grid_pos) and type > get_road(grid_pos) and get_terrain_name(grid_pos) == "grass" \
+		and not is_occupied(grid_pos) and get_tree_stage(grid_pos) == NO_TREE
+
+
+func get_speed_multiplier(grid_pos: Vector2i) -> float:
+	return float(ROAD_SPEED_MULTIPLIERS.get(get_road(grid_pos), 1.0))
+
+
 static func cell_to_json(grid_pos: Vector2i) -> Array:
 	return [grid_pos.x, grid_pos.y]
 
@@ -115,7 +150,10 @@ func to_save_data() -> Dictionary:
 			codes.append(TERRAIN_CODES[get_terrain_name(Vector2i(x, y))])
 	for grid_pos in _tree_age:
 		trees.append([grid_pos.x, grid_pos.y, _trees[grid_pos], _tree_age[grid_pos]])
-	return {"terrain": "".join(codes), "trees": trees}
+	var roads := []
+	for grid_pos in _roads:
+		roads.append([grid_pos.x, grid_pos.y, _roads[grid_pos]])
+	return {"terrain": "".join(codes), "trees": trees, "roads": roads}
 
 
 func from_save_data(data: Dictionary) -> void:
@@ -132,6 +170,14 @@ func from_save_data(data: Dictionary) -> void:
 		_trees[grid_pos] = int(entry[2])
 		_tree_age[grid_pos] = int(entry[3])
 	trees_reloaded.emit()
+	var previous := get_road_cells()
+	_roads.clear()
+	for cell in previous:
+		roads_changed.emit(cell)
+	for entry in data.get("roads", []):
+		var grid_pos := Vector2i(int(entry[0]), int(entry[1]))
+		_roads[grid_pos] = int(entry[2]) as Road
+		roads_changed.emit(grid_pos)
 
 
 func get_terrain_name(grid_pos: Vector2i) -> String:
@@ -177,7 +223,8 @@ func cut_tree(grid_pos: Vector2i) -> bool:
 
 
 func can_plant(grid_pos: Vector2i) -> bool:
-	return is_in_bounds(grid_pos) and not is_occupied(grid_pos) and get_terrain_name(grid_pos) == "grass"
+	return is_in_bounds(grid_pos) and not is_occupied(grid_pos) and get_terrain_name(grid_pos) == "grass" \
+		and get_road(grid_pos) == Road.NONE
 
 
 func plant_sapling(grid_pos: Vector2i) -> bool:

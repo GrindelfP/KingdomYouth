@@ -167,7 +167,8 @@ func _process(delta: float) -> void:
 		_replan()
 		return
 	var target := world.grid_to_world(_path[0])
-	global_position = global_position.move_toward(target, SPEED_TILES_PER_SECOND * world.get_tile_size().x * delta)
+	var speed := SPEED_TILES_PER_SECOND * world.get_tile_size().x * world.get_speed_multiplier(_path[0])
+	global_position = global_position.move_toward(target, speed * delta)
 	if global_position == target:
 		_last_cell = _path.pop_front()
 		if _path.is_empty():

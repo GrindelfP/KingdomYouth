@@ -9,6 +9,7 @@ func _ready() -> void:
 	_world = get_parent()
 	_world.map_generated.connect(_build)
 	_world.walkability_changed.connect(_on_walkability_changed)
+	_world.roads_changed.connect(_on_roads_changed)
 
 
 func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
@@ -28,6 +29,7 @@ func _build() -> void:
 			var cell := Vector2i(x, y)
 			_astar.add_point(_id(cell), Vector2(cell))
 			_astar.set_point_disabled(_id(cell), not _world.is_walkable(cell))
+			_astar.set_point_weight_scale(_id(cell), _weight_for(cell))
 	for x in range(bounds.position.x, bounds.end.x):
 		for y in range(bounds.position.y, bounds.end.y):
 			var cell := Vector2i(x, y)
@@ -40,6 +42,15 @@ func _build() -> void:
 func _on_walkability_changed(grid_pos: Vector2i) -> void:
 	if _world.is_in_bounds(grid_pos):
 		_astar.set_point_disabled(_id(grid_pos), not _world.is_walkable(grid_pos))
+
+
+func _on_roads_changed(grid_pos: Vector2i) -> void:
+	if _world.is_in_bounds(grid_pos):
+		_astar.set_point_weight_scale(_id(grid_pos), _weight_for(grid_pos))
+
+
+func _weight_for(grid_pos: Vector2i) -> float:
+	return 1.0 / _world.get_speed_multiplier(grid_pos)
 
 
 func _id(grid_pos: Vector2i) -> int:
