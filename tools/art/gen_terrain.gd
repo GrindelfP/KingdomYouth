@@ -13,11 +13,13 @@ const FOREST_VARIANTS := 2
 const ROCK_VARIANTS := 2
 const WATER_VARIANTS := 2
 const ROAD_MASKS := 16
+const BLEED_VARIANTS := 4
 
 
 static func generate() -> void:
 	_ground_atlas()
 	_shore_atlas()
+	_bleed_atlas()
 	_road_atlas()
 
 
@@ -313,6 +315,64 @@ static func _ice(c: RefCounted, variant: int) -> RefCounted:
 		c.line(x, y + 3, x + 3, y, S[3])
 		c.px(x + 4, y - 1, S[3])
 	_specks(c, 6, [S[3], W[4]], false)
+	return c
+
+
+static func _bleed_atlas() -> void:
+	var keys := ShoreMask.keys()
+	var sheet := Canvas.create(keys.size() * T, SEASONS * 2 * BLEED_VARIANTS * T, 1)
+	for season in SEASONS:
+		for kind in 2:
+			for variant in BLEED_VARIANTS:
+				var source: RefCounted = _forest_floor(season, variant % FOREST_VARIANTS) if kind == 0 else _rock_ground(season, variant % ROCK_VARIANTS)
+				var row := (season * 2 + kind) * BLEED_VARIANTS + variant
+				for index in keys.size():
+					sheet.blit(_bleed_tile(source, keys[index], season * 16 + kind * 4 + variant), index * T, row * T)
+	sheet.save("%s/bleed.png" % OUT_DIR)
+
+
+static func _smin(a: float, b: float, k: float) -> float:
+	var h := maxf(k - absf(a - b), 0.0) / k
+	return minf(a, b) - h * h * k * 0.25
+
+
+static func _stretch(n: float) -> float:
+	return clampf((n - 0.5) * 2.4 + 0.5, 0.0, 1.0)
+
+
+static func _bleed_field(x: float, y: float, k: int, seed_value: int, taper_x: float, taper_y: float) -> float:
+	var sides := ShoreMask.sides_of(k)
+	var corners := ShoreMask.corners_of(k)
+	var f := 1000.0
+	var common := _stretch(Util.pnoise(x, y, 2, T, 1500) * 0.5 + Util.pnoise(x, y, 4, T, 1505) * 0.35 + Util.pnoise(x, y, 8, T, 1509) * 0.15)
+	var own := _stretch(Util.pnoise(x, y, 2, T, seed_value) * 0.5 + Util.pnoise(x, y, 4, T, seed_value + 5) * 0.35 + Util.pnoise(x, y, 8, T, seed_value + 9) * 0.15)
+	var along := [taper_x, taper_y, taper_x, taper_y]
+	var corner_taper := minf(taper_x, taper_y)
+	var dists := [y, T - x, T - y, x]
+	for bit in 4:
+		if sides & (1 << bit):
+			var wide := (lerpf(common, own, along[bit]) - 0.5) * 2.0
+			var edge: float = 6.4 + wide * 6.4
+			f = _smin(f, dists[bit] - edge, 4.0)
+	var centers := [Vector2(T, 0), Vector2(T, T), Vector2(0, T), Vector2(0, 0)]
+	for bit in 4:
+		if corners & (1 << bit):
+			f = _smin(f, Vector2(x, y).distance_to(centers[bit]) - (5.0 + (lerpf(common, own, corner_taper) - 0.5) * 2.0 * 4.0), 4.0)
+	return f
+
+
+static func _bleed_tile(source: RefCounted, k: int, seed_value: int) -> RefCounted:
+	var c := Canvas.create(T, T, 1)
+	for j in T:
+		for i in T:
+			var x := i + 0.5
+			var y := j + 0.5
+			var taper_x := smoothstep(0.0, 6.0, minf(x, T - x))
+			var taper_y := smoothstep(0.0, 6.0, minf(y, T - y))
+			var f := _bleed_field(x, y, k, 1500 + seed_value, taper_x, taper_y)
+			var bayer: int = Canvas.BAYER[(j % 4) * 4 + (i % 4)]
+			if f < 0.0 or (f < 1.4 and bayer < 6):
+				c.px(i, j, source.get_px(i, j))
 	return c
 
 
