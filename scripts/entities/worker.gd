@@ -68,6 +68,10 @@ func is_paused() -> bool:
 	return _paused
 
 
+func is_working() -> bool:
+	return _state == State.WORK or _state == State.BUILD
+
+
 func get_state_name() -> String:
 	return State.keys()[_state].capitalize()
 

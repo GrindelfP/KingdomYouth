@@ -6,6 +6,7 @@ const MODULES: Array[String] = [
 	"res://tools/art/gen_nature.gd",
 	"res://tools/art/gen_buildings.gd",
 	"res://tools/art/gen_building_support.gd",
+	"res://tools/art/gen_people_ui.gd",
 ]
 
 

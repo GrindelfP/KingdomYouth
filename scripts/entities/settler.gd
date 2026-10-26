@@ -8,19 +8,22 @@ enum Sex { MALE, FEMALE }
 enum AgeStage { CHILD, ADULT, ELDER }
 
 const SPEED_TILES_PER_SECOND := 3.0
-const RADIUS := 6.0
-const COLOR := Color(0.95, 0.85, 0.6)
 const REST_CALL := 25.0
 const REST_FULL := 95.0
-const CARRY_MARKER_SIZE := 6.0
 const TOOL_LIFETIME := 720.0
 const NO_TOOL_SPEED := 0.5
 const CHILD_AGE := 10.0
 const ELDER_AGE := 60.0
 const ELDER_SPEED := 0.7
-const CHILD_RADIUS := 4.0
-const FEMALE_COLOR := Color(0.95, 0.7, 0.7)
 const STAGE_NAMES := ["Child", "Adult", "Elder"]
+const STEP_PIXELS := 9.0
+const WORK_FRAME_SECONDS := 0.28
+const OUTLINE_SHADER: Shader = preload("res://assets/shaders/structure_outline.gdshader")
+const OUTLINE_COLORS: Array[Color] = [Color(1.0, 1.0, 1.0, 0.9), Color(1.0, 0.85, 0.3, 1.0)]
+
+enum Facing { DOWN, UP, SIDE }
+
+static var _outline_materials: Array[ShaderMaterial] = []
 
 var world: WorldGrid
 var pathfinder: GridPathfinder
@@ -46,6 +49,18 @@ var _moving := false
 var _home_cell := Vector2i.ZERO
 var _resting := false
 var _warming := false
+var hovered := false
+var selected := false
+var _body: Sprite2D
+var _carry: Sprite2D
+var _facing := Facing.DOWN
+var _walk_distance := 0.0
+var _work_time := 0.0
+var _flip := false
+var _shown_row := -1
+var _shown_frame := -1
+var _shown_outline := -1
+var _shown_carry := &""
 
 
 func _ready() -> void:
@@ -55,6 +70,16 @@ func _ready() -> void:
 	needs.meal_provider = _meal_source
 	worker = Worker.new()
 	add_child(worker)
+	_body = Sprite2D.new()
+	_body.centered = false
+	_body.offset = SettlerArt.SPRITE_OFFSET
+	_body.texture = SettlerArt.SHEET
+	_body.region_enabled = true
+	add_child(_body)
+	_carry = Sprite2D.new()
+	_carry.visible = false
+	add_child(_carry)
+	_sync_sprite()
 
 
 func setup(world_grid: WorldGrid, grid_pathfinder: GridPathfinder, build_controller: BuildController, grid_pos: Vector2i) -> void:
@@ -101,7 +126,6 @@ func is_kin_of(other: Settler) -> bool:
 
 func set_age(value: float) -> void:
 	age = value
-	queue_redraw()
 
 
 func needs_tool() -> bool:
@@ -146,7 +170,6 @@ func is_carrying() -> bool:
 func set_carried(id: StringName, amount: int) -> void:
 	carried_id = id if amount > 0 else StringName()
 	carried_amount = maxi(amount, 0)
-	queue_redraw()
 
 
 func move_to(grid_pos: Vector2i) -> bool:
@@ -161,30 +184,93 @@ func cancel_movement() -> void:
 
 
 func _process(delta: float) -> void:
-	if not _moving:
-		return
-	if not world.is_walkable(_path[0]):
-		_replan()
-		return
+	if _moving:
+		if not world.is_walkable(_path[0]):
+			_replan()
+		else:
+			_step(delta)
+	_animate(delta)
+
+
+func _step(delta: float) -> void:
 	var target := world.grid_to_world(_path[0])
 	var speed := SPEED_TILES_PER_SECOND * world.get_tile_size().x * world.get_speed_multiplier(_path[0])
-	global_position = global_position.move_toward(target, speed * delta)
+	var before := global_position
+	var direction := target - before
+	if absf(direction.x) >= absf(direction.y):
+		_facing = Facing.SIDE
+		_flip = direction.x < 0.0
+	else:
+		_facing = Facing.DOWN if direction.y > 0.0 else Facing.UP
+	global_position = before.move_toward(target, speed * delta)
+	_walk_distance += before.distance_to(global_position)
 	if global_position == target:
 		_last_cell = _path.pop_front()
 		if _path.is_empty():
 			_arrive()
 
 
-func _draw() -> void:
-	var radius := RADIUS if is_working_age() else CHILD_RADIUS
-	draw_circle(Vector2.ZERO, radius, COLOR if sex == Sex.MALE else FEMALE_COLOR)
-	if get_age_stage() == AgeStage.ELDER:
-		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 16, Color(0.85, 0.85, 0.85), 1.5)
-	if carried_amount > 0:
-		var color := ResourceCatalog.get_def(carried_id).color
-		var marker := Vector2.ONE * CARRY_MARKER_SIZE
-		draw_rect(Rect2(Vector2(-CARRY_MARKER_SIZE / 2.0, -RADIUS - CARRY_MARKER_SIZE - 1.0), marker), color)
-		draw_rect(Rect2(Vector2(-CARRY_MARKER_SIZE / 2.0, -RADIUS - CARRY_MARKER_SIZE - 1.0), marker), Color.BLACK, false)
+func set_hovered(value: bool) -> void:
+	hovered = value
+
+
+func set_selected(value: bool) -> void:
+	selected = value
+
+
+func tooltip_text() -> String:
+	var title := given_name
+	if get_age_stage() == AgeStage.CHILD:
+		return "%s, child" % title
+	return "%s, %s%s" % [title, Professions.display_name(profession), " (elder)" if get_age_stage() == AgeStage.ELDER else ""]
+
+
+func _animate(delta: float) -> void:
+	var frame := 1
+	var bob := 0.0
+	if _moving:
+		var phase := int(_walk_distance / STEP_PIXELS) % 4
+		frame = int(_facing) * 4 + phase
+		bob = -1.0 if phase % 2 == 1 else 0.0
+	elif worker != null and worker.is_working():
+		_facing = Facing.DOWN
+		_work_time += delta
+		frame = SettlerArt.WORK_FRAME + int(_work_time / WORK_FRAME_SECONDS) % 2
+	else:
+		frame = int(_facing) * 4 + 1
+	_body.flip_h = _flip and _facing == Facing.SIDE and frame < SettlerArt.WORK_FRAME
+	_sync_sprite(frame)
+	_carry.position.y = SettlerArt.HEAD_TOP[get_age_stage()] - 7.0 + bob
+
+
+func _sync_sprite(frame := 1) -> void:
+	var sheet_row := SettlerArt.row(display_id, get_age_stage(), sex, profession)
+	if sheet_row != _shown_row or frame != _shown_frame:
+		_shown_row = sheet_row
+		_shown_frame = frame
+		_body.region_rect = SettlerArt.frame_rect(sheet_row, frame)
+	var outline := 2 if selected else (1 if hovered else 0)
+	if outline != _shown_outline:
+		_shown_outline = outline
+		_body.material = _outline_material(outline)
+	var carried := carried_id if carried_amount > 0 else &""
+	if carried != _shown_carry:
+		_shown_carry = carried
+		var icon := SettlerArt.carry_texture(carried) if carried != &"" else null
+		_carry.texture = icon
+		_carry.visible = icon != null
+
+
+static func _outline_material(mode: int) -> ShaderMaterial:
+	if mode <= 0:
+		return null
+	if _outline_materials.is_empty():
+		for color in OUTLINE_COLORS:
+			var material := ShaderMaterial.new()
+			material.shader = OUTLINE_SHADER
+			material.set_shader_parameter("outline_color", color)
+			_outline_materials.append(material)
+	return _outline_materials[mode - 1]
 
 
 func assign_home(house: Building) -> bool:

@@ -19,6 +19,9 @@ const BIRTH_MIN_FOOD := 10
 const OLD_AGE_LIMIT := 80.0
 const OLD_AGE_BASE_CHANCE := 0.005
 const OLD_AGE_RISE := 0.2
+const PICK_RADIUS := 12.0
+const TIP_LAYER := 4
+const TIP_OFFSET := Vector2(16.0, 18.0)
 const HEAT_DURATION := 20.0
 const FUEL_PER_HEATING := 1
 const MALE_NAMES := ["Alder", "Bram", "Cedric", "Dunstan", "Edmund", "Finn", "Godric", "Hale", "Ivo", "Jory", "Kellan", "Leofric", "Merrick", "Osric", "Piers", "Rowan", "Tobin", "Wystan"]
@@ -29,6 +32,9 @@ var _pathfinder: GridPathfinder
 var _buildings: BuildController
 var _tick_accumulator := 0.0
 var _next_display_id := 1
+var _hovered: Settler
+var _tip_panel: PanelContainer
+var _tip_label: Label
 
 
 func _ready() -> void:
@@ -37,9 +43,49 @@ func _ready() -> void:
 	_buildings = get_parent().get_node("Buildings")
 	_world.map_generated.connect(_spawn_starting_settlers)
 	TimeManager.month_changed.connect(_on_month_changed)
+	var layer := CanvasLayer.new()
+	layer.layer = TIP_LAYER
+	add_child(layer)
+	_tip_panel = PanelContainer.new()
+	_tip_panel.theme = UiTheme.load_theme()
+	_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.visible = false
+	_tip_label = Label.new()
+	_tip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(_tip_label)
+	layer.add_child(_tip_panel)
+
+
+func hovered_settler() -> Settler:
+	return _hovered if is_instance_valid(_hovered) else null
+
+
+func _update_hover() -> void:
+	var target: Settler = null
+	var buildings := _world.get_node_or_null("Buildings") as BuildController
+	var blocked := get_viewport().gui_get_hovered_control() != null or (buildings != null and buildings.is_placing())
+	if not blocked:
+		var mouse := get_global_mouse_position()
+		var best := PICK_RADIUS
+		for settler in living_settlers():
+			var distance := settler.global_position.distance_to(mouse)
+			if distance <= best:
+				best = distance
+				target = settler
+	if target != _hovered:
+		if is_instance_valid(_hovered):
+			_hovered.set_hovered(false)
+		_hovered = target
+		if target != null:
+			target.set_hovered(true)
+	_tip_panel.visible = target != null
+	if target != null:
+		_tip_label.text = target.tooltip_text()
+		_tip_panel.position = get_viewport().get_mouse_position() + TIP_OFFSET
 
 
 func _process(delta: float) -> void:
+	_update_hover()
 	_tick_accumulator += delta
 	while _tick_accumulator >= POPULATION_TICK:
 		_tick_accumulator -= POPULATION_TICK

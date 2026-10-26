@@ -84,6 +84,9 @@ func _click(world_pos: Vector2) -> void:
 
 
 func _sync_highlight() -> void:
+	var picked := get_selected_settler()
+	for settler in _settlers.living_settlers():
+		settler.set_selected(settler == picked)
 	var structure: Structure = get_selected_building()
 	if structure == null:
 		structure = get_selected_site()

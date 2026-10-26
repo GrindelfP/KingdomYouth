@@ -62,6 +62,7 @@ func _ready() -> void:
 	_tip_layer.layer = TIP_LAYER
 	add_child(_tip_layer)
 	_tip_panel = PanelContainer.new()
+	_tip_panel.theme = UiTheme.load_theme()
 	_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tip_panel.visible = false
 	_tip_label = Label.new()
@@ -121,7 +122,9 @@ func set_highlight(structure: Structure) -> void:
 
 func _update_hover() -> void:
 	var target: Structure = null
-	if not _placing and get_viewport().gui_get_hovered_control() == null:
+	var settlers := _world.get_node_or_null("Settlers") as SettlerManager
+	var over_settler := settlers != null and settlers.hovered_settler() != null
+	if not _placing and not over_settler and get_viewport().gui_get_hovered_control() == null:
 		var cell := _world.world_to_grid(get_global_mouse_position())
 		target = find_site_at(cell)
 		if target == null:
