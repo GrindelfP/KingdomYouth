@@ -12,6 +12,8 @@ const SEASON_MESSAGES := [
 const SPEED_LABELS := ["||", ">", ">>", ">>>"]
 const BAR_GOODS: Array[StringName] = [&"logs", &"stone", &"iron", &"firewood", &"tools"]
 const FOOD_KEY := &"food"
+const STORAGE_WARN_RATIO := 0.9
+const STORAGE_CLEAR_RATIO := 0.8
 const FOOD_COLOR := Color(0.88, 0.75, 0.27)
 
 var _build: BuildController
@@ -19,6 +21,8 @@ var _jobs: JobController
 var _settlers: SettlerManager
 var _resource_labels: Dictionary = {}
 var _food_box: Control
+var _storage_label: Label
+var _storage_warned := false
 var _time_label: Label
 var _speed_buttons: Array[Button] = []
 var _population_label: Label
@@ -80,7 +84,20 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_time_label.text = "%s, Year %d" % [TimeManager.get_month_name(), TimeManager.get_year()]
+	_update_storage()
 	_population_label.text = "Population %d (working %d)" % [_settlers.population(), _settlers.employed_count()]
+
+
+func _update_storage() -> void:
+	var capacity := ResourceStockpile.get_capacity()
+	var stored := ResourceStockpile.get_stored_total()
+	_storage_label.text = "Storage %d/%d" % [stored, capacity]
+	var ratio := float(stored) / capacity if capacity > 0 else 1.0
+	if not _storage_warned and ratio >= STORAGE_WARN_RATIO:
+		_storage_warned = true
+		add_toast("Storage is nearly full. Build more storage.")
+	elif _storage_warned and ratio < STORAGE_CLEAR_RATIO:
+		_storage_warned = false
 
 
 func add_toast(text: String) -> void:
@@ -114,6 +131,8 @@ func _build_top_bar() -> PanelContainer:
 		row.add_child(_make_resource_entry(id, ResourceCatalog.display_name(id), ResourceCatalog.get_def(id).color))
 	_food_box = _make_resource_entry(FOOD_KEY, "Food", FOOD_COLOR)
 	row.add_child(_food_box)
+	_storage_label = _make_label()
+	row.add_child(_storage_label)
 	_population_label = _make_label()
 	row.add_child(_population_label)
 	_time_label = _make_label()

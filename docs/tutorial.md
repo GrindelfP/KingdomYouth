@@ -27,6 +27,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 
 - 5 settlers, all homeless.
 - 80 logs, 30 stone, 10 iron, 40 firewood, 12 tools, 60 wheat, and 40 berries. The top bar shows logs, stone, iron, firewood, tools, and total food. Hover over Food to see each kind.
+- A free Stockpile (400 capacity) and a Storage Barn (600 capacity) near the middle of the map, holding the starting goods. The top bar shows the total used and available storage.
 - A map with forests, lakes, and rock. Your settlers start near the middle.
 
 ## The buildings
@@ -34,9 +35,10 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | Building | Cost | Size | What it does |
 | --- | --- | --- | --- |
 | **House** | 15 logs | 2x2 | Holds 4 settlers. Settlers with a home rest there, stay warm in winter, and can have children. |
-| **Woodcutter's Lodge** | 10 logs | 2x2 | Has 2 woodcutter slots. Woodcutters walk to the nearest forest tile and gather 2 logs each trip. The tile turns to grass and grows back after 2 minutes. |
+| **Woodcutter's Lodge** | 10 logs | 2x2 | Has 2 woodcutter slots. Woodcutters walk to the nearest forest tile and gather 2 logs each trip. Goods collect in the building's output buffer (20 units); once it holds 10, a worker carries them to the nearest storage with room, so keep storage close. The tile turns to grass and grows back after 2 minutes. |
 | **Farm** | 15 logs | 3x3 | Has 3 farmer slots. Each harvest gives 3 wheat. Farms work faster in summer and stop in winter. |
-| **Storage Barn** | 10 logs | 2x2 | Decorative only. The stockpile is shared by the whole settlement, so the barn adds nothing yet. |
+| **Stockpile** | free | 4x4 | Stores 400 units of materials, fuel, and tools. |
+| **Storage Barn** | 40 logs, 20 stone | 3x3 | Stores 600 units of food, tools, and fuel. |
 
 Buildings go on grass only. You cannot build on forest, water, or rock, or on top of another building. Buildings also block walking, so settlers path around them. Settlers standing on a spot do not stop you building there; they just walk away.
 
@@ -68,7 +70,7 @@ To take a settler off the job, select the building and press **Remove**, or sele
 
 ### 5. Build a farm and assign farmers
 
-Click **Farm** and place it on a 3x3 patch of grass. Then assign up to 3 settlers to it, the same way as in step 4. Food rises as farmers harvest.
+Click **Farm** and place it on a 3x3 patch of grass. Then assign up to 3 settlers to it, the same way as in step 4. Food rises as farmers harvest and carry it to storage.
 
 Settlers eat from the shared food stock by themselves when they get hungry, taking from the most plentiful kind first. If food runs out, they starve and their health falls.
 
@@ -102,6 +104,7 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 
 - Build a house before your first birth is possible, since births need room.
 - Place the farm and lodge close to houses to shorten settler trips.
+- If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
 - Watch the firewood count in winter, and the log count when you build.
 - Use the info panel to check why a settler is idle. The job line shows **paused** when the settler is eating or resting.
 - A forest tile that a woodcutter used will come back after 2 minutes, so a forest can last a long time if you spread woodcutters around.

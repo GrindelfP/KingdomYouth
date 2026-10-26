@@ -54,6 +54,8 @@ func _build_settler_view(settler: Settler) -> void:
 	if settler.home:
 		home = "%s at %s" % [settler.home.def.display_name, settler.home.origin]
 	_add_line("Home: " + home)
+	if settler.is_carrying():
+		_add_line("Carrying: %d %s" % [settler.carried_amount, ResourceCatalog.display_name(settler.carried_id)])
 	_add_bar("Hunger", settler.needs.hunger)
 	_add_bar("Rest", settler.needs.rest)
 	_add_bar("Warmth", settler.needs.warmth)
@@ -78,10 +80,21 @@ func _build_building_view(building: Building) -> void:
 					_add_row("Settler %d (idle)" % settler.display_id, "Assign", func() -> void: settler.worker.assign(building))
 			if idle == 0:
 				_add_line("No idle settlers.")
+		_add_inventory("Output", building.output)
+		if building.is_output_blocked():
+			_add_line("Storage full: output cannot be hauled, work is stalled.")
+	if building.storage:
+		_add_inventory("Stored", building.storage)
 	if building.def.housing_capacity > 0:
 		_add_line("Residents %d / %d" % [building.residents.size(), building.def.housing_capacity])
 		_add_line("Heating: " + ("on" if building.is_heated() else "off"))
 	_add_button("Close", _jobs.clear_selection)
+
+
+func _add_inventory(title: String, inventory: Inventory) -> void:
+	_add_line("%s %d / %d" % [title, inventory.total(), inventory.capacity])
+	for id in inventory.ids():
+		_add_line("  %s: %d" % [ResourceCatalog.display_name(id), inventory.get_amount(id)])
 
 
 func _add_title(text: String) -> void:

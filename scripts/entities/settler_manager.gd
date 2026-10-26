@@ -77,6 +77,8 @@ func to_save_data() -> Array:
 			"rest": settler.needs.rest,
 			"warmth": settler.needs.warmth,
 			"health": settler.needs.health,
+			"carried_id": String(settler.carried_id),
+			"carried_amount": settler.carried_amount,
 			"home": WorldGrid.cell_to_json(settler.home.origin) if settler.home else null,
 			"job": WorldGrid.cell_to_json(settler.worker.building.origin) if settler.worker.building else null,
 		})
@@ -93,6 +95,8 @@ func from_save_data(entries: Array, buildings: BuildController) -> void:
 		settler.needs.rest = float(entry["rest"])
 		settler.needs.warmth = float(entry["warmth"])
 		settler.needs.health = float(entry["health"])
+		if int(entry["carried_amount"]) > 0 and ResourceCatalog.has(StringName(entry["carried_id"])):
+			settler.set_carried(StringName(entry["carried_id"]), int(entry["carried_amount"]))
 		if entry["home"] != null:
 			var house := buildings.find_building(WorldGrid.cell_from_json(entry["home"]))
 			if house:

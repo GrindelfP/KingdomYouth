@@ -10,7 +10,8 @@ Balance growth against food, warmth, and shelter as the seasons change.
 
 - Top-down 2D tile-grid world with forests, lakes, and rock
 - Settlers with needs (hunger, rest, warmth, health) who act on their own
-- Buildings: house, woodcutter's lodge, farm, storage barn
+- Buildings: house, woodcutter's lodge, farm, stockpile, storage barn
+- Physical storage: goods are hauled by settlers to storage with limited capacity
 - Job assignment by clicking settlers and buildings
 - Seasons, a month/year calendar, and winter heating
 - Births, deaths, and a population that depends on housing and food

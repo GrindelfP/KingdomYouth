@@ -1,7 +1,7 @@
 extends Node
 
 const SAVE_PATH := "user://savegame.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 
 var pending_load := false
 
@@ -16,7 +16,6 @@ func save_game() -> bool:
 		return false
 	var data := {
 		"version": SAVE_VERSION,
-		"stock": ResourceStockpile.to_save_data(),
 		"time": TimeManager.to_save_data(),
 		"terrain": world.to_save_data(),
 		"buildings": world.get_node("Buildings").to_save_data(),
@@ -38,7 +37,6 @@ func load_game() -> bool:
 		return false
 	var buildings: BuildController = world.get_node("Buildings")
 	var settlers: SettlerManager = world.get_node("Settlers")
-	ResourceStockpile.from_save_data(parsed["stock"])
 	TimeManager.from_save_data(parsed["time"])
 	settlers.clear_settlers()
 	buildings.clear_buildings()

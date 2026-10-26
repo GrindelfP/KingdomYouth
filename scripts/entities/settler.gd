@@ -9,6 +9,7 @@ const RADIUS := 6.0
 const COLOR := Color(0.95, 0.85, 0.6)
 const REST_CALL := 25.0
 const REST_FULL := 95.0
+const CARRY_MARKER_SIZE := 6.0
 
 var world: WorldGrid
 var pathfinder: GridPathfinder
@@ -16,6 +17,8 @@ var needs: Needs
 var worker: Worker
 var home: Building
 var display_id := 0
+var carried_id: StringName
+var carried_amount := 0
 var _last_cell := Vector2i.ZERO
 var _destination := Vector2i.ZERO
 var _path: Array[Vector2i] = []
@@ -47,6 +50,16 @@ func is_moving() -> bool:
 	return _moving
 
 
+func is_carrying() -> bool:
+	return carried_amount > 0
+
+
+func set_carried(id: StringName, amount: int) -> void:
+	carried_id = id if amount > 0 else StringName()
+	carried_amount = maxi(amount, 0)
+	queue_redraw()
+
+
 func move_to(grid_pos: Vector2i) -> bool:
 	_destination = grid_pos
 	_moving = true
@@ -74,6 +87,11 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, RADIUS, COLOR)
+	if carried_amount > 0:
+		var color := ResourceCatalog.get_def(carried_id).color
+		var marker := Vector2.ONE * CARRY_MARKER_SIZE
+		draw_rect(Rect2(Vector2(-CARRY_MARKER_SIZE / 2.0, -RADIUS - CARRY_MARKER_SIZE - 1.0), marker), color)
+		draw_rect(Rect2(Vector2(-CARRY_MARKER_SIZE / 2.0, -RADIUS - CARRY_MARKER_SIZE - 1.0), marker), Color.BLACK, false)
 
 
 func assign_home(house: Building) -> bool:

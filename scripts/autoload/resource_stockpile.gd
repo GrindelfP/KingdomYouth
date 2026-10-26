@@ -1,8 +1,9 @@
 extends Node
 
 signal resource_changed(id: StringName, new_amount: int)
+signal storage_changed
 
-var _amounts: Dictionary = {}
+var _storages: Array[Building] = []
 
 
 func _ready() -> void:
@@ -10,39 +11,97 @@ func _ready() -> void:
 
 
 func reset() -> void:
-	_amounts.clear()
+	_storages.clear()
 	for id in ResourceCatalog.all_ids():
-		_amounts[id] = ResourceCatalog.get_def(id).starting_amount
-		resource_changed.emit(id, _amounts[id])
+		resource_changed.emit(id, 0)
+	storage_changed.emit()
 
 
-func to_save_data() -> Dictionary:
-	var data := {}
-	for id in _amounts:
-		data[String(id)] = _amounts[id]
-	return data
+func register_storage(building: Building) -> void:
+	if _storages.has(building):
+		return
+	_storages.append(building)
+	building.storage.changed.connect(_on_inventory_changed)
+	storage_changed.emit()
+	for id in building.storage.ids():
+		_on_inventory_changed(id)
 
 
-func from_save_data(data: Dictionary) -> void:
+func unregister_storage(building: Building) -> void:
+	if not _storages.has(building):
+		return
+	_storages.erase(building)
+	building.storage.changed.disconnect(_on_inventory_changed)
+	storage_changed.emit()
 	for id in ResourceCatalog.all_ids():
-		_set_amount(id, int(data.get(String(id), 0)))
+		if building.storage.get_amount(id) > 0:
+			_on_inventory_changed(id)
+
+
+func get_storages() -> Array[Building]:
+	return _storages.duplicate()
+
+
+func find_storages(id: StringName, from: Vector2i) -> Array[Building]:
+	var result: Array[Building] = []
+	for building in _storages:
+		if building.def.accepts(id) and building.storage.free_space() > 0:
+			result.append(building)
+	result.sort_custom(func(a: Building, b: Building) -> bool:
+		return _distance(a, from) < _distance(b, from))
+	return result
 
 
 func get_amount(id: StringName) -> int:
-	return _amounts.get(id, 0)
+	var total := 0
+	for building in _storages:
+		total += building.storage.get_amount(id)
+	return total
 
 
-func add(id: StringName, amount: int) -> void:
+func get_capacity(category: int = -1) -> int:
+	var total := 0
+	for building in _storages:
+		if category < 0 or building.def.storage_categories.is_empty() or building.def.storage_categories.has(category):
+			total += building.def.storage_capacity
+	return total
+
+
+func get_stored_total() -> int:
+	var total := 0
+	for building in _storages:
+		total += building.storage.total()
+	return total
+
+
+func get_free_space(id: StringName) -> int:
+	var total := 0
+	for building in _storages:
+		if building.def.accepts(id):
+			total += building.storage.free_space()
+	return total
+
+
+func add(id: StringName, amount: int) -> int:
 	assert(amount >= 0)
 	assert(ResourceCatalog.has(id))
-	_set_amount(id, get_amount(id) + amount)
+	var left := amount
+	for building in find_storages(id, WorldGrid.MAP_RECT.get_center()):
+		left -= building.storage.add(id, left)
+		if left <= 0:
+			break
+	return amount - left
 
 
 func remove(id: StringName, amount: int) -> bool:
 	assert(amount >= 0)
 	if get_amount(id) < amount:
 		return false
-	_set_amount(id, get_amount(id) - amount)
+	var left := amount
+	for building in _by_distance(WorldGrid.MAP_RECT.get_center()):
+		left -= building.storage.take(id, left)
+		if left <= 0:
+			break
 	return true
 
 
@@ -86,6 +145,17 @@ func remove_food(amount: int) -> bool:
 	return true
 
 
-func _set_amount(id: StringName, new_amount: int) -> void:
-	_amounts[id] = new_amount
-	resource_changed.emit(id, new_amount)
+func _by_distance(from: Vector2i) -> Array[Building]:
+	var result := _storages.duplicate()
+	result.sort_custom(func(a: Building, b: Building) -> bool:
+		return _distance(a, from) < _distance(b, from))
+	return result
+
+
+func _distance(building: Building, from: Vector2i) -> int:
+	var delta := building.get_center_cell() - from
+	return absi(delta.x) + absi(delta.y)
+
+
+func _on_inventory_changed(id: StringName) -> void:
+	resource_changed.emit(id, get_amount(id))

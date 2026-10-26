@@ -6,8 +6,11 @@
 script = ExtResource("1_def")
 id = &"storage_barn"
 display_name = "Storage Barn"
-footprint = Vector2i(2, 2)
+footprint = Vector2i(3, 3)
 cost = {
-&"logs": 10
+&"logs": 40,
+&"stone": 20
 }
-build_time = 5.0
+build_time = 6.0
+storage_capacity = 600
+storage_categories = Array[int]([3, 2, 1])

@@ -2,6 +2,7 @@ class_name Building
 extends Node2D
 
 const BUILDING_COLOR := Color(0.45, 0.3, 0.15)
+const OUTPUT_CAPACITY := 20
 const ACCESS_OFFSETS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 
 var def: BuildingDef
@@ -10,6 +11,8 @@ var workers: Array[Settler] = []
 var residents: Array[Settler] = []
 var birth_cooldown := 0.0
 var heat_left := 0.0
+var storage: Inventory
+var output: Inventory
 var _world: WorldGrid
 var _size: Vector2
 
@@ -20,7 +23,17 @@ func setup(world: WorldGrid, building_def: BuildingDef, grid_origin: Vector2i) -
 	origin = grid_origin
 	global_position = world.get_cell_rect(origin).position
 	_size = Vector2(def.footprint) * world.get_tile_size()
+	if def.is_storage():
+		storage = Inventory.new(def.storage_capacity)
+		ResourceStockpile.register_storage(self)
+	if def.job:
+		output = Inventory.new(OUTPUT_CAPACITY)
 	queue_redraw()
+
+
+func _exit_tree() -> void:
+	if storage:
+		ResourceStockpile.unregister_storage(self)
 
 
 func occupies(grid_pos: Vector2i) -> bool:
@@ -44,6 +57,16 @@ func get_access_cells() -> Array[Vector2i]:
 
 func job_def() -> JobDef:
 	return def.job
+
+
+func is_storage() -> bool:
+	return storage != null
+
+
+func is_output_blocked() -> bool:
+	if output == null:
+		return false
+	return output.free_space() < def.job.output_amount and ResourceStockpile.find_storages(def.job.output_id, get_center_cell()).is_empty()
 
 
 func is_heated() -> bool:

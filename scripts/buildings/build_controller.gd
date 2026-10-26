@@ -6,10 +6,13 @@ signal construction_completed(building: Building)
 
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
+const START_SEARCH_RADIUS := 20
+const START_MARGIN := 1
 
 var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/woodcutters_lodge.tres"),
 	load("res://resources/buildings/farm.tres"),
+	load("res://resources/buildings/stockpile.tres"),
 	load("res://resources/buildings/storage_barn.tres"),
 	load("res://resources/buildings/house.tres"),
 ]
@@ -87,6 +90,14 @@ func try_place(def: BuildingDef, origin: Vector2i) -> bool:
 	return true
 
 
+func place_starting_storage(avoid: Array[Vector2i]) -> void:
+	for def_id in [&"stockpile", &"storage_barn"]:
+		var def := _def_by_id(String(def_id))
+		var origin := _find_free_origin(def, WorldGrid.MAP_RECT.get_center(), avoid)
+		if origin != Vector2i(-1, -1):
+			add_building(def, origin)
+
+
 func add_building(def: BuildingDef, origin: Vector2i) -> Building:
 	_world.set_occupied(def.get_cells(origin), true)
 	var building := Building.new()
@@ -129,6 +140,8 @@ func to_save_data() -> Array:
 				"origin": WorldGrid.cell_to_json(child.origin),
 				"heat_left": child.heat_left,
 				"birth_cooldown": child.birth_cooldown,
+				"storage": child.storage.to_save_data() if child.storage else {},
+				"output": child.output.to_save_data() if child.output else {},
 			})
 		elif child is ConstructionSite:
 			entries.append({
@@ -151,6 +164,37 @@ func from_save_data(entries: Array) -> void:
 			var building := add_building(def, origin)
 			building.heat_left = float(entry["heat_left"])
 			building.birth_cooldown = float(entry["birth_cooldown"])
+			if building.storage:
+				building.storage.from_save_data(entry["storage"])
+			if building.output:
+				building.output.from_save_data(entry["output"])
+
+
+func _find_free_origin(def: BuildingDef, near: Vector2i, avoid: Array[Vector2i]) -> Vector2i:
+	var candidates: Array[Vector2i] = []
+	for x in range(-START_SEARCH_RADIUS, START_SEARCH_RADIUS + 1):
+		for y in range(-START_SEARCH_RADIUS, START_SEARCH_RADIUS + 1):
+			candidates.append(near + Vector2i(x, y) - (def.footprint - Vector2i.ONE) / 2)
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.distance_squared_to(near) < b.distance_squared_to(near))
+	for origin in candidates:
+		if _is_free_with_margin(def, origin, avoid):
+			return origin
+	return Vector2i(-1, -1)
+
+
+func _is_free_with_margin(def: BuildingDef, origin: Vector2i, avoid: Array[Vector2i]) -> bool:
+	for x in range(-START_MARGIN, def.footprint.x + START_MARGIN):
+		for y in range(-START_MARGIN, def.footprint.y + START_MARGIN):
+			var cell := origin + Vector2i(x, y)
+			var inside := x >= 0 and y >= 0 and x < def.footprint.x and y < def.footprint.y
+			if not _world.is_in_bounds(cell) or _world.is_occupied(cell) or avoid.has(cell):
+				return false
+			if inside and not _world.is_buildable(cell):
+				return false
+			if not inside and not _world.is_walkable(cell):
+				return false
+	return true
 
 
 func _def_by_id(id: String) -> BuildingDef:
