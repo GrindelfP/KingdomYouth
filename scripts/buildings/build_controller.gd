@@ -145,6 +145,18 @@ func is_placing() -> bool:
 	return _placing or _demolishing
 
 
+func is_demolishing() -> bool:
+	return _demolishing
+
+
+func active_road() -> int:
+	return _road if _placing else WorldGrid.Road.NONE
+
+
+func active_index() -> int:
+	return _selected if _placing and _road == WorldGrid.Road.NONE else -1
+
+
 func start_placing() -> void:
 	_placing = true
 	_demolishing = false

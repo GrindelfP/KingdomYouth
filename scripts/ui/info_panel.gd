@@ -172,6 +172,7 @@ func _add_inventory(title: String, inventory: Inventory) -> void:
 func _add_title(text: String) -> void:
 	var label := Label.new()
 	label.text = text
+	label.theme_type_variation = &"TitleLabel"
 	_content.add_child(label)
 
 
@@ -206,6 +207,8 @@ func _add_bar(text: String, value: float) -> void:
 	bar.max_value = 100.0
 	bar.value = value
 	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0, 12)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(bar)
 	_content.add_child(row)

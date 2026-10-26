@@ -14,9 +14,11 @@ func setup(labor: LaborManager) -> void:
 	_labor = labor
 	visible = false
 	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 1)
 	add_child(column)
 	var title := Label.new()
 	title.text = "Professions"
+	title.theme_type_variation = &"TitleLabel"
 	column.add_child(title)
 	for profession in labor.profession_ids():
 		column.add_child(_make_row(profession))
@@ -53,6 +55,8 @@ func _make_button(text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.focus_mode = Control.FOCUS_NONE
+	button.theme_type_variation = &"SmallButton"
+	button.custom_minimum_size = Vector2(26, 22)
 	button.pressed.connect(func() -> void:
 		action.call()
 		_refresh())
