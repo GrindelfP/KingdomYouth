@@ -9,12 +9,12 @@
 - `godot` is NOT on PATH. Godot.app is installed at `/Applications/Godot.app` (Godot 4.4.1).
 - Run the editor: `open -a Godot` or `/Applications/Godot.app/Contents/MacOS/Godot`.
 - Run headless: `/Applications/Godot.app/Contents/MacOS/Godot --headless <args>`.
-- Repo is otherwise empty; there are no build/test/lint configs yet — do not invent commands.
+- Test and art commands (soak test, save round-trip, art generator) are documented in README.md; do not invent others.
 
 ## Git workflow (mandatory)
 - Commit on every change, even small ones. Never skip a commit.
 - When the asked work is done: push to the remote.
-- Remote: `origin` = `https://github.com/GrindelfP/KingdomYouth.git` (already configured; repo not yet created on GitHub — push will fail until it exists).
+- Remote: `origin` = `https://github.com/GrindelfP/KingdomYouth.git`.
 - Commit message prefix in square brackets:
   - `[INIT]` — first commit
   - `[FEATURE]` — starting a new feature
