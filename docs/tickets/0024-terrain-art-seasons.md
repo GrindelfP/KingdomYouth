@@ -4,6 +4,9 @@
 - **Milestone:** M9 — Visual Overhaul
 - **Depends on:** 0023, 0018, 0022
 
+## Style
+Follow `docs/art-style.md` and the pipeline notes in ticket 0023 (`tools/art/`).
+
 ## Goal
 A landscape that looks alive and changes with the seasons: textured ground with variation, individual trees, shorelines, rocks — green in spring, golden in autumn, white in winter.
 

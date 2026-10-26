@@ -1,6 +1,6 @@
 # 0023 — Procedural art pipeline & style guide
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M9 — Visual Overhaul
 - **Depends on:** 0015
 
@@ -24,10 +24,27 @@ Owner feedback (2026-10-26): textures must be more interesting, structures must 
 - Terrain, building, and settler art (0024–0026).
 
 ## Acceptance criteria
-- [ ] Running the generator twice yields identical files (deterministic).
-- [ ] Every good has a distinct, recognizable icon shown in the HUD.
-- [ ] Style guide exists and later art tickets reference it.
-- [ ] Headless run is free of script errors.
+- [x] Running the generator twice yields identical files (deterministic).
+- [x] Every good has a distinct, recognizable icon shown in the HUD.
+- [x] Style guide exists and later art tickets reference it.
+- [x] Headless run is free of script errors.
 
 ## Open questions
 - None.
+
+## Implementation notes
+- Pipeline: `tools/art/generate_art.gd` runs the modules listed in its `MODULES` array. Regenerate with `/Applications/Godot.app/Contents/MacOS/Godot --headless --path . -s tools/art/generate_art.gd`, then `--headless --path . --import`. On a fresh checkout run `--import` once first (global classes). Output is byte-identical between runs (verified by md5).
+- Add art: create `tools/art/gen_<name>.gd` (`extends RefCounted`, `static func generate() -> void`, preload `pixel_canvas.gd` and `palette.gd`), add its path to `MODULES`, write PNGs under `assets/art/<name>/` with `canvas.save("res://assets/art/...")`. Seed every canvas (`Canvas.create(w, h, seed)`); never use unseeded randomness. Tools scripts use `preload`/`load` paths, not `class_name`.
+- Add a good icon: add a maker in `tools/art/gen_icons.gd` (16x16, keep content inside 1..14), then add `icon = ExtResource(...)` to the good's `.tres`. `ResourceDef.icon: Texture2D` exists; the extra `assets/art/icons/food.png` is the HUD "Food" total icon.
+- `tools/art/pixel_canvas.gd` (`Canvas.create(w, h, seed) -> canvas`, fields `image`, `rng`, `width`, `height`):
+  - Pixels: `px(x,y,color)` (alpha-blends), `get_px`, `is_opaque`, `clear`, `inside`.
+  - Shapes: `rect`, `rect_outline`, `ellipse(cx,cy,rx,ry,c)`, `ellipse_outline`, `line`, `polygon(PackedVector2Array, c)`.
+  - Shading: `shade_rect(x,y,w,h,ramp)` (bevel), `shade_ellipse(cx,cy,rx,ry,ramp)` (sphere, light top-left), `shade_polygon(points,ramp)`, `gradient_v(x,y,w,h,ramp)` (Bayer dithered).
+  - Texture: `noise_fill(x,y,w,h,ramp,scale,seed,only_opaque)`, `speckle(x,y,w,h,color,density,only_opaque)`.
+  - Passes: `outline(color)`, `outline_dark(amount=0.62)` (selective darkened outline), `drop_shadow(dx,dy,color)`.
+  - Composition: `blit(other,x,y)`, `flipped_h()`, `scaled(factor)`, `save(res_path)`.
+  - Static: `hash2/hash01(x,y,seed)` (per-cell determinism, also usable at runtime), `value_noise`, `darken`, `lighten`.
+- `tools/art/palette.gd`: ramps (dark to light) `GRASS, LEAF_DEEP, WOOD, STRAW, STONE, ROOF_RED, SLATE, WATER, SNOW, AUTUMN, SAND, DIRT, STEEL, BERRY, MEAT, CREAM, FIRE, SKIN, FISH, BREAD, CABBAGE` plus `INK`, `SHADOW`, `CLEAR`. About 80 colors in ramps; this is larger than the ~32 target on purpose so terrain, seasons, 12 buildings and settlers can share it. Style rules in `docs/art-style.md`.
+- Contact sheet: `Godot --headless --path . -s tools/art/contact_sheet.gd -- res://assets/art/icons <out.png> <scale>` scales every PNG in a directory and tiles them (useful to review sprites).
+- Visual check of the real game: `Godot --path . --write-movie <dir>/mov.png --fixed-fps 30 --quit-after 90` writes numbered frame PNGs from a windowed run (a custom scene with an await/save approach hung, movie mode works). Delete the frames afterwards.
+- Project default canvas texture filter is now nearest (`project.godot`, `[rendering]`). HUD resource bar and `InfoPanel` (inventory, construction materials, carried good) show icons via `ResourceCatalog.get_def(id).icon`.

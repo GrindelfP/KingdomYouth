@@ -9,3 +9,4 @@ enum Category { MATERIAL, FUEL, TOOL, FOOD }
 @export var color := Color.WHITE
 @export var sort_order := 0
 @export var starting_amount := 0
+@export var icon: Texture2D

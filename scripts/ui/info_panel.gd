@@ -63,7 +63,7 @@ func _build_settler_view(settler: Settler) -> void:
 		home = "%s at %s" % [settler.home.def.display_name, settler.home.origin]
 	_add_line("Home: " + home)
 	if settler.is_carrying():
-		_add_line("Carrying: %d %s" % [settler.carried_amount, ResourceCatalog.display_name(settler.carried_id)])
+		_add_good_line(settler.carried_id, "Carrying: %d %s" % [settler.carried_amount, ResourceCatalog.display_name(settler.carried_id)])
 	_add_line(_tool_text(settler))
 	_add_bar("Hunger", settler.needs.hunger)
 	_add_bar("Rest", settler.needs.rest)
@@ -85,7 +85,7 @@ func _build_site_view(site: ConstructionSite) -> void:
 	_add_line(site.status_text())
 	_add_line("Progress %d%%" % roundi(site.progress_ratio() * 100.0))
 	for id in site.required:
-		_add_line("  %s: %d / %d" % [ResourceCatalog.display_name(id), site.delivered.get_amount(id), site.required[id]])
+		_add_good_line(id, "%s: %d / %d" % [ResourceCatalog.display_name(id), site.delivered.get_amount(id), site.required[id]])
 	_add_button("Cancel construction", _jobs.cancel_selected_site)
 	_add_button("Close", _jobs.clear_selection)
 
@@ -166,7 +166,7 @@ func _diet_text(house: Building) -> String:
 func _add_inventory(title: String, inventory: Inventory) -> void:
 	_add_line("%s %d / %d" % [title, inventory.total(), inventory.capacity])
 	for id in inventory.ids():
-		_add_line("  %s: %d" % [ResourceCatalog.display_name(id), inventory.get_amount(id)])
+		_add_good_line(id, "%s: %d" % [ResourceCatalog.display_name(id), inventory.get_amount(id)])
 
 
 func _add_title(text: String) -> void:
@@ -180,6 +180,19 @@ func _add_line(text: String) -> void:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_content.add_child(label)
+
+
+func _add_good_line(id: StringName, text: String) -> void:
+	var row := HBoxContainer.new()
+	var icon := TextureRect.new()
+	icon.texture = ResourceCatalog.get_def(id).icon
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.custom_minimum_size = Vector2(16, 16)
+	row.add_child(icon)
+	var label := Label.new()
+	label.text = text
+	row.add_child(label)
+	_content.add_child(row)
 
 
 func _add_bar(text: String, value: float) -> void:
