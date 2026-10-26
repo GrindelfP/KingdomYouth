@@ -5,6 +5,7 @@ signal hint_changed(text: String)
 signal construction_completed(building: Building)
 signal construction_cancelled(def: BuildingDef)
 signal crops_lost(building: Building, count: int)
+signal notice(text: String)
 
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
@@ -13,6 +14,7 @@ const RADIUS_LINE := Color(1.0, 1.0, 1.0, 0.5)
 const RADIUS_SEGMENTS := 64
 const START_SEARCH_RADIUS := 20
 const START_MARGIN := 1
+const STONE_ROAD_COST := 1
 
 var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/foresters_lodge.tres"),
@@ -35,6 +37,10 @@ var _placing := false
 var _selected := 0
 var _hover := Vector2i.ZERO
 var _highlight: Structure
+var _road := WorldGrid.Road.NONE
+var _demolishing := false
+var _dragging := false
+var _drag_from := Vector2i.ZERO
 
 
 func _ready() -> void:
@@ -50,16 +56,33 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("build_toggle"):
-		_placing = not _placing
+		if _placing:
+			stop_modes()
+		else:
+			start_placing()
 	elif event.is_action_pressed("build_cycle"):
 		_selected = (_selected + 1) % building_defs.size()
+		_road = WorldGrid.Road.NONE
 	elif event.is_action_pressed("build_size") and _placing:
 		cycle_size()
-	elif event.is_action_pressed("cancel_build") and _placing:
-		_placing = false
+	elif event.is_action_pressed("demolish_toggle"):
+		toggle_demolish()
+	elif event.is_action_pressed("cancel_build") and (_placing or _demolishing):
+		stop_modes()
 	elif event.is_action_pressed("place_building") and _placing:
 		_hover = _world.world_to_grid(get_global_mouse_position())
-		try_place(selected_def(), _hover)
+		if _road == WorldGrid.Road.NONE:
+			try_place(selected_def(), _hover)
+		else:
+			_dragging = true
+			_drag_from = _hover
+		get_viewport().set_input_as_handled()
+	elif event.is_action_released("place_building") and _dragging:
+		_dragging = false
+		place_road_line(_drag_from, _world.world_to_grid(get_global_mouse_position()), _road)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("place_building") and _demolishing:
+		demolish_at(_world.world_to_grid(get_global_mouse_position()))
 		get_viewport().set_input_as_handled()
 
 
@@ -68,15 +91,48 @@ func set_highlight(structure: Structure) -> void:
 
 
 func is_placing() -> bool:
-	return _placing
+	return _placing or _demolishing
+
+
+func start_placing() -> void:
+	_placing = true
+	_demolishing = false
+	_dragging = false
 
 
 func select_building(index: int) -> void:
 	_selected = index
-	_placing = true
+	_road = WorldGrid.Road.NONE
+	start_placing()
+
+
+func select_road(type: WorldGrid.Road) -> void:
+	_road = type
+	start_placing()
+
+
+func toggle_demolish() -> void:
+	var was_on := _demolishing
+	stop_modes()
+	_demolishing = not was_on
+
+
+func stop_modes() -> void:
+	_placing = false
+	_demolishing = false
+	_dragging = false
+
+
+func find_def_index(id: StringName) -> int:
+	for index in building_defs.size():
+		if building_defs[index].id == id:
+			return index
+	return -1
 
 
 func cycle_size() -> void:
+	if _road != WorldGrid.Road.NONE:
+		return
 	var family := selected_def().family
 	if family == &"":
 		return
@@ -88,11 +144,96 @@ func cycle_size() -> void:
 
 
 func cancel_placement() -> void:
-	_placing = false
+	stop_modes()
 
 
 func selected_def() -> BuildingDef:
 	return building_defs[_selected]
+
+
+func find_building_at(grid_pos: Vector2i) -> Building:
+	for building in get_buildings():
+		if building.occupies(grid_pos):
+			return building
+	return null
+
+
+static func road_line_cells(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	var cell := from
+	cells.append(cell)
+	while cell.x != to.x:
+		cell.x += signi(to.x - cell.x)
+		cells.append(cell)
+	while cell.y != to.y:
+		cell.y += signi(to.y - cell.y)
+		cells.append(cell)
+	return cells
+
+
+func place_road_line(from: Vector2i, to: Vector2i, type: WorldGrid.Road) -> int:
+	var candidates: Array[Vector2i] = []
+	for cell in road_line_cells(from, to):
+		if _world.can_place_road(cell, type):
+			candidates.append(cell)
+	var count := candidates.size()
+	if type == WorldGrid.Road.STONE:
+		count = mini(count, ResourceStockpile.get_amount(&"stone") / STONE_ROAD_COST)
+		if count < candidates.size():
+			notice.emit("Not enough stone: built %d of %d stone road tiles." % [count, candidates.size()])
+		if count == 0:
+			return 0
+		ResourceStockpile.spend({&"stone": count * STONE_ROAD_COST})
+	for index in count:
+		_world.set_road(candidates[index], type)
+	return count
+
+
+func road_error(grid_pos: Vector2i, type: WorldGrid.Road) -> String:
+	if _world.can_place_road(grid_pos, type):
+		return ""
+	if not _world.is_in_bounds(grid_pos) or _world.get_terrain_name(grid_pos) != "grass":
+		return "roads need open grass"
+	if _world.get_road(grid_pos) >= type:
+		return "already a road"
+	return "tile is occupied or has trees"
+
+
+func demolish_at(grid_pos: Vector2i) -> bool:
+	var site := find_site_at(grid_pos)
+	if site:
+		cancel_site(site)
+		return true
+	var building := find_building_at(grid_pos)
+	if building:
+		demolish_building(building)
+		return true
+	if _world.get_road(grid_pos) != WorldGrid.Road.NONE:
+		_world.set_road(grid_pos, WorldGrid.Road.NONE)
+		return true
+	return false
+
+
+func demolish_building(building: Building) -> void:
+	if not building.is_alive():
+		return
+	for worker in building.workers.duplicate():
+		worker.worker.unassign()
+	for resident in building.residents.duplicate():
+		resident.unassign_home()
+	remove_child(building)
+	if _highlight == building:
+		_highlight = null
+	_world.set_occupied(building.def.get_cells(building.origin), false)
+	for inventory in [building.storage, building.output, building.input, building.household]:
+		if inventory == null:
+			continue
+		for id in inventory.ids():
+			ResourceStockpile.add(id, inventory.take(id, inventory.get_amount(id)))
+	for id in building.def.cost:
+		ResourceStockpile.add(id, int(building.def.cost[id]) / 2)
+	building.queue_free()
+	notice.emit("Demolished %s. Half of its cost was returned to storage." % building.def.display_name)
 
 
 func get_placement_error(def: BuildingDef, origin: Vector2i) -> String:
@@ -319,12 +460,21 @@ func _on_site_completed(site: ConstructionSite) -> void:
 
 
 func _update_hint() -> void:
-	var def := selected_def()
+	if _demolishing:
+		hint_changed.emit("Demolish: click a building, construction site or road. Esc to stop.")
+		return
 	if not _placing:
 		hint_changed.emit("")
 		return
-	var reason := get_placement_error(def, _hover)
-	hint_changed.emit("Build %s: %s" % [def.display_name, reason if reason != "" else "click to place, Esc to cancel"])
+	if _road != WorldGrid.Road.NONE:
+		var road_name := "Dirt road" if _road == WorldGrid.Road.DIRT else "Stone road"
+		var reason := road_error(_hover, _road)
+		var cost := "free" if _road == WorldGrid.Road.DIRT else "1 stone per tile"
+		hint_changed.emit("Build %s (%s): %s" % [road_name, cost, reason if reason != "" else "drag a straight or L-shaped line, release to place"])
+		return
+	var def := selected_def()
+	var error := get_placement_error(def, _hover)
+	hint_changed.emit("Build %s: %s" % [def.display_name, error if error != "" else "click to place, Esc to cancel"])
 
 
 func _draw() -> void:
@@ -332,12 +482,22 @@ func _draw() -> void:
 		if _highlight != null and is_instance_valid(_highlight) and _highlight.def.job:
 			_draw_radius(_highlight.def, _highlight.origin)
 		return
+	if _road != WorldGrid.Road.NONE:
+		_draw_road_preview()
+		return
 	var def := selected_def()
 	var color := VALID_COLOR if get_placement_error(def, _hover) == "" else INVALID_COLOR
 	var top_left := to_local(_world.get_cell_rect(_hover).position)
 	draw_rect(Rect2(top_left, Vector2(def.footprint) * _world.get_tile_size()), color)
 	if def.job:
 		_draw_radius(def, _hover)
+
+
+func _draw_road_preview() -> void:
+	var cells := road_line_cells(_drag_from, _hover) if _dragging else [_hover]
+	for cell in cells:
+		var color := VALID_COLOR if _world.can_place_road(cell, _road) else INVALID_COLOR
+		draw_rect(Rect2(to_local(_world.get_cell_rect(cell).position), _world.get_tile_size()), color)
 
 
 func _draw_radius(def: BuildingDef, origin: Vector2i) -> void:
