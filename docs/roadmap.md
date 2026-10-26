@@ -36,14 +36,41 @@ The player can actually see and control the above without reading logs.
 ## M5 — Persistence
 - 0013 — Save/load system
 
+## v0.2 — "Banished loop" (planned 2026-10-26)
+Owner playtest feedback: keep going, but (A) no day/night cycle, only seasons; (B) structures must be distinguishable and textures more interesting; (C) overall graphics too simple. Everything else follows Banished's gameloop: physical goods, laborers/builders, profession counts, renewable resources, households, tools, families.
+
+### M6 — Seasons & Time
+- 0014 — Seasons-only calendar & game speed
+
+### M7 — Banished Economy
+- 0015 — Resource catalog
+- 0016 — Physical storage & hauling
+- 0017 — Laborers, builders & profession management
+- 0018 — Raw production buildings & work areas
+- 0019 — Households, firewood & tools
+- 0020 — Crop fields with a seasonal lifecycle
+
+### M8 — Population
+- 0021 — Aging & families
+- 0022 — Roads & demolition
+
+### M9 — Visual Overhaul
+- 0023 — Procedural art pipeline & style guide
+- 0024 — Terrain art & seasonal landscape
+- 0025 — Distinct building art
+- 0026 — Settler art & UI skin
+
+### M10 — v0.2 Release
+- 0027 — Integration, balance pass & docs for v0.2
+
 ## Later / stretch (not ticketed yet)
 Deliberately deferred until M0–M5 form a working loop:
-- Additional professions & buildings (miner, blacksmith, hunter, fisherman, healer, school)
+- Additional professions & buildings (healer, school, tailor, tavern, orchards, livestock)
 - Trading post / merchants
 - Disasters: fire, disease, famine
 - Tech/research progression
 - Multiple map biomes, procedural terrain generation
-- Sound design & art polish
+- Sound design
 - Win/lose conditions beyond "settlement survives"
 
 ## Working agreement
