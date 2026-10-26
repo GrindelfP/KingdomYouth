@@ -12,7 +12,7 @@ Balance growth against food, warmth, and shelter as the seasons change.
 - Settlers with needs (hunger, rest, warmth, health) who act on their own
 - Buildings: house, woodcutter's lodge, farm, storage barn
 - Job assignment by clicking settlers and buildings
-- Seasons, day/night cycle, and winter heating
+- Seasons, a month/year calendar, and winter heating
 - Births, deaths, and a population that depends on housing and food
 - HUD with resource bar, build menu, info panel, and toasts
 - Save and load to a JSON file
@@ -37,6 +37,8 @@ godot --path .
 | Zoom | Mouse wheel |
 | Select a settler or building | Left-click |
 | Place a building | `B`, pick it in the build menu, then left-click |
+| Pause / resume | `Space` |
+| Game speed | `1` (normal), `2` (fast), `3` (fastest), or the top bar buttons |
 | Save / load | `F5` / `F9` |
 
 The full guide to controls, buildings, and the first hour of play is in [docs/tutorial.md](docs/tutorial.md).

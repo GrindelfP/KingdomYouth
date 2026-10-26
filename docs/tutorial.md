@@ -17,6 +17,8 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | Change the building you are placing | `Tab` |
 | Place a building | Left-click while in placing mode |
 | Stop placing | `Esc` or right-click |
+| Pause / resume | `Space` or the `||` button |
+| Game speed | `1`, `2`, `3`, or the `>`, `>>`, `>>>` buttons |
 | Save the game | `F5` or the **Save** button |
 | Load the saved game | `F9` or the **Load** button |
 | Start over | **New game** button |
@@ -83,14 +85,14 @@ Births happen when a house has at least 2 settlers, room for another, and at lea
 
 ### 7. Prepare for winter
 
-The year runs through spring, summer, autumn, and winter. Each season is 10 days, and each day is 20 seconds, so one season is roughly 3 minutes.
+The year has 12 months grouped into four seasons: spring, summer, autumn, and winter. Each month lasts 60 seconds at normal speed, so one season is roughly 3 minutes.
 
 - **Summer:** farms run at 1.5 times their normal speed. Stock up.
 - **Winter:** farms stop completely. Unheated settlers lose warmth, and then health.
 
 To keep settlers warm in winter, each house with residents burns 1 wood every 20 seconds. Keep wood in the stockpile before winter arrives. The toast for "Winter" is a reminder.
 
-The top bar shows the day and season.
+The top bar shows the current month and year, for example "Mid Summer, Year 2".
 
 ### 8. Save and reload
 
