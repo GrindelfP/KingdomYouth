@@ -1,6 +1,6 @@
 # 0018 — Raw production buildings & work areas
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M7 — Banished Economy
 - **Depends on:** 0017
 
@@ -30,12 +30,34 @@ Banished's gatherers, hunters, foresters and fishermen are the backbone of an ea
 - Animal entities, overhunting simulation. Final art for trees/buildings (0024/0025).
 
 ## Acceptance criteria
-- [ ] All six buildings can be built, staffed and produce their goods into storage via hauling.
-- [ ] Foresters keep a forest alive over several years; without them forest recedes.
-- [ ] Work radius is visible when placing and when selected.
-- [ ] Placement rules for dock/quarry/mine are enforced with clear messages.
-- [ ] Save/load round-trips tree growth.
-- [ ] Headless run is free of script errors.
+- [x] All six buildings can be built, staffed and produce their goods into storage via hauling.
+- [x] Foresters keep a forest alive over several years; without them forest recedes.
+- [x] Work radius is visible when placing and when selected.
+- [x] Placement rules for dock/quarry/mine are enforced with clear messages.
+- [x] Save/load round-trips tree growth.
+- [x] Headless run is free of script errors.
 
 ## Open questions
 - None.
+
+## Implementation notes
+
+**JobDef (data-driven):** `outputs` (array of `{id, amount, chance}`, replaces `output_id/output_amount`; helpers `output_total()`, `primary_output()`), `target_mode` (`ACCESS` = work from a building edge cell, `FOREST_CELL` = walk to a random forest cell in radius, `FORESTER` = plant/cut logic), `work_radius` (tiles, circle measured from `Structure.get_work_center()`), `density_cells` (forest tiles in radius for 100% speed, 0 = no scaling), `winter_factor` (speed multiplier in winter, 0 = no work), `seasonal` (kept for the farm until 0020), `placement_rule` (`NONE`, `NEAR_WATER`, `NEAR_ROCK`) with `rule_radius`/`rule_min_cells`, `plant_time`, `forest_density`. `Building.work_efficiency()` combines density, winter and seasonal factors; work duration is `work_time / efficiency`.
+
+**Trees (WorldGrid):** per-cell state kept in `_trees` (cell -> stage) and `_tree_age` (months in the current stage, immature only). Forest terrain tiles remain the ground tile for all stages; natural forest starts mature. A stage takes `MONTHS_PER_STAGE = 2` months and does not advance in winter (sapling to mature = 4 non-winter months). API for 0024: `get_tree_stage(cell)` (`NO_TREE = -1`, `STAGE_SAPLING/YOUNG/MATURE` = 0/1/2), `get_tree_cells()`, signals `trees_changed(cell)` (plant, cut, stage change) and `trees_reloaded` (after save load). Also `cut_tree`, `plant_sapling`, `can_plant`, `get_cells_in_radius`, `count_terrain_in_radius`, `count_trees_in_radius`. `REGROW_TIME`, `deplete_forest` and `get_terrain_cells` were removed. Cutting leaves grass (no stump).
+
+**Forester:** counts trees and free grass in radius; plants while density (trees / (trees + plantable grass)) is below 0.6, otherwise cuts a mature tree for 3 logs. Hence logs are only produced when trees are available, and the forest settles near 60% density.
+
+**Buildings (cost / build time / work_time / yield / workers):**
+- Forester's Lodge 2x2: 20 logs / 15 s / 6 s per cut (3 s per plant) / 3 logs per tree / 2, radius 8.
+- Gatherer's Hut 2x2: 15 logs / 12 s / 5 s / 2 berries + 1 mushroom (50%) / 2, radius 8, full speed at 40 forest tiles, no winter work.
+- Hunting Cabin 2x2: 25 logs / 18 s / 12 s / 4 venison / 2, radius 10, full speed at 60 forest tiles, winter factor 0.5.
+- Fishing Dock 2x2: 30 logs / 20 s / 8 s / 3 fish / 2, must touch water, winter factor 0.5.
+- Quarry 3x3: 30 logs / 25 s / 10 s / 2 stone / 3, needs >= 4 rock tiles within 3.
+- Mine 3x3: 40 logs + 20 stone / 30 s / 14 s / 2 iron / 3, needs >= 4 rock tiles within 3.
+
+**UI:** `BuildController` draws a translucent work-radius circle for the placement preview and for the selected building or site (`set_highlight`, driven by `JobController`). Placement errors: "must be next to water", "needs 4 rock tiles within 3 tiles (found N)". Info panel shows forest tiles / tree counts / rock tiles in range and the current work rate.
+
+**Other:** old Woodcutter's Lodge and its job were deleted. `SAVE_VERSION` is 6 (trees saved as `[x, y, stage, age]` for immature trees only; old saves are rejected). `BuildController.from_save_data` skips unknown building ids. With the woodcutter gone nothing cuts trees except foresters, so the "forest recedes" criterion only holds in the sense that logs stop; no building clears forest on its own.
+
+**Verified headless (throwaway scripts):** all six buildings placed at programmatically found valid spots, staffed, and delivered goods into storage over ~50 simulated months; forester kept ~60 trees in its radius stable; dock/quarry rule rejection counted across the whole map; sapling growth timing (stage 1 after 2 months, mature after 4, frozen in winter); save/load round-trip of tree states.

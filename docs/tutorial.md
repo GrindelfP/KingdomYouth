@@ -37,7 +37,12 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | Building | Cost | Size | What it does |
 | --- | --- | --- | --- |
 | **House** | 15 logs | 2x2 | Holds 4 settlers. Settlers with a home rest there, stay warm in winter, and can have children. |
-| **Woodcutter's Lodge** | 10 logs | 2x2 | Has 2 woodcutter slots. Woodcutters walk to the nearest forest tile and gather 2 logs each trip. Goods collect in the building's output buffer (20 units); once it holds 10, a worker carries them to the nearest storage with room, so keep storage close. The tile turns to grass and grows back after 2 minutes. |
+| **Forester's Lodge** | 20 logs | 2x2 | 2 foresters. Work radius 8 tiles. Cuts mature trees (3 logs each) and plants saplings on free grass so the forest stays at about 60% density. |
+| **Gatherer's Hut** | 15 logs | 2x2 | 2 gatherers. Radius 8. Collects berries and some mushrooms in forest tiles; faster the more forest is in range (full speed at 40 forest tiles). Stops in winter. |
+| **Hunting Cabin** | 25 logs | 2x2 | 2 hunters. Radius 10. Venison from forest tiles in range (full speed at 60 forest tiles); half speed in winter. |
+| **Fishing Dock** | 30 logs | 2x2 | 2 fishers. Must touch water. Fish; half speed in winter. |
+| **Quarry** | 30 logs | 3x3 | 3 quarrymen. Needs at least 4 rock tiles within 3 tiles. Produces stone. |
+| **Mine** | 40 logs, 20 stone | 3x3 | 3 miners. Needs at least 4 rock tiles within 3 tiles. Produces iron. |
 | **Farm** | 15 logs | 3x3 | Has 3 farmer slots. Each harvest gives 3 wheat. Farms work faster in summer and stop in winter. |
 | **Stockpile** | free | 4x4 | Stores 400 units of materials, fuel, and tools. |
 | **Storage Barn** | 40 logs, 20 stone | 3x3 | Stores 600 units of food, tools, and fuel. |
@@ -60,17 +65,17 @@ To cancel a site, right-click it or select it and press **Cancel construction** 
 
 When it is done, a toast appears in the top right. Homeless settlers move in automatically, up to 4 per house.
 
-### 3. Build a Woodcutter's Lodge near the forest
+### 3. Build a Forester's Lodge near the forest
 
-Click **Woodcutter's Lodge**, then place it on grass close to the forest. Woodcutters walk to the nearest reachable forest tile, so closer is better.
+Click **Forester's Lodge**, then place it on grass close to the forest. While placing, and when the building is selected, a translucent circle shows its work radius. Foresters only work inside that circle. Gatherers and hunters depend on how much forest is inside it, and the dock, quarry, and mine show a hint when their terrain rule is not met.
 
 ### 4. Staff the lodge
 
-You never assign settlers one by one. A finished workplace asks for its full number of workers and the town fills it from the laborers automatically. Select the lodge to change its **Desired workers** with `-` and `+` in the info panel.
+You never assign settlers one by one. A finished workplace asks for its full number of workers and the town fills it from the laborers automatically. Select the building to change its **Desired workers** with `-` and `+` in the info panel.
 
 You can also open the **Professions** panel (`P`). Each row shows `assigned / max` for a profession, where max is the total slots in your built workplaces. `+` turns the nearest laborer into that profession, and `-` sends the farthest one back to being a laborer. Builders have no maximum; raise them to build faster.
 
-Woodcutters walk to the forest, gather logs, and return to repeat the loop. Logs appear in the top bar. Laborers who have nothing to deliver also empty full workplace buffers into storage and wait near the storage buildings.
+Foresters cut mature trees and plant saplings, then goods go to the output buffer and back to storage. Logs appear in the top bar. Laborers who have nothing to deliver also empty full workplace buffers into storage and wait near the storage buildings.
 
 ### 5. Build a farm and staff it
 
@@ -108,15 +113,15 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 
 - Keep enough laborers: they carry all construction materials and also haul workplace output. Too many jobs leaves nobody to deliver.
 - Build a house before your first birth is possible, since births need room.
-- Place the farm and lodge close to houses to shorten settler trips.
+- Place the farm and workplaces close to houses to shorten settler trips.
 - If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
 - Watch the firewood count in winter, and the log count when you build.
 - Use the info panel to check why a settler is idle. The task line shows **paused** when the settler is eating or resting.
-- A forest tile that a woodcutter used will come back after 2 minutes, so a forest can last a long time if you spread woodcutters around.
+- Trees grow one stage (sapling, young, mature) every 2 months, except in winter. Only mature trees can be cut. A cut tile becomes grass, and foresters replant it, so keep a lodge staffed to keep logs coming.
 
 ## Known limits (for now)
 
 - The balance (costs, rates, timings) is a first draft and will change.
 - There is no main menu or settings screen.
-- Stone, iron, tools, and most food kinds are not produced or used yet.
+- Tools, cabbage, and wheat processing are not produced yet. Stone and iron are produced but not used except for the barn and mine.
 - Save files from older versions of the game may not load after changes.

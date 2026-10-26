@@ -8,12 +8,12 @@ job_name = "Gatherer"
 slots = 2
 work_time = 5.0
 outputs = Array[Dictionary]([{
-"amount": 3,
+"amount": 2,
 "chance": 1.0,
 "id": &"berries"
 },
 {
-"amount": 2,
+"amount": 1,
 "chance": 0.5,
 "id": &"mushrooms"
 }])

@@ -6,7 +6,7 @@
 script = ExtResource("1_job")
 job_name = "Miner"
 slots = 3
-work_time = 10.0
+work_time = 14.0
 outputs = Array[Dictionary]([{
 "amount": 2,
 "chance": 1.0,
