@@ -10,9 +10,10 @@ Balance growth against food, warmth, and shelter as the seasons change.
 
 - Top-down 2D tile-grid world with forests, lakes, and rock
 - Settlers with needs (hunger, rest, warmth, health) who act on their own
-- Buildings: house, forester's lodge, gatherer's hut, hunting cabin, fishing dock, quarry, mine, farm, woodcutter, blacksmith, stockpile, storage barn
+- Buildings: house, forester's lodge, gatherer's hut, hunting cabin, fishing dock, quarry, mine, crop fields (4x4, 6x6, 8x8), woodcutter, blacksmith, stockpile, storage barn
 - Physical storage: goods are hauled by settlers to storage with limited capacity
 - Banished-style labor: laborers haul materials, builders construct, and you set profession counts
+- Crop fields with a seasonal lifecycle: plow and plant in spring, grow in summer, harvest in autumn, frost in winter
 - Seasons, a month/year calendar, and winter heating from each house's own firewood
 - Households: houses keep their own food and firewood, and settlers fetch and eat from them
 - Crafting: woodcutter (logs to firewood) and blacksmith (iron and logs to tools); tools wear out and speed up work

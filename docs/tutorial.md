@@ -43,7 +43,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | **Fishing Dock** | 30 logs | 2x2 | 2 fishers. Must touch water. Fish; half speed in winter. |
 | **Quarry** | 30 logs | 3x3 | 3 quarrymen. Needs at least 4 rock tiles within 3 tiles. Produces stone. |
 | **Mine** | 40 logs, 20 stone | 3x3 | 3 miners. Needs at least 4 rock tiles within 3 tiles. Produces iron. |
-| **Farm** | 15 logs | 3x3 | Has 3 farmer slots. Each harvest gives 3 wheat. Farms work faster in summer and stop in winter. |
+| **Crop Field** | 15 / 30 / 50 logs | 4x4 / 6x6 / 8x8 | Up to 4 farmers. Grows wheat or cabbage cell by cell over the year (see below). Each harvested cell gives 2 of the crop. Press `R` while placing to change the size. |
 | **Woodcutter** | 20 logs | 2x2 | 1 woodcutter. Turns 1 log into 3 firewood. Fetches logs from storage in batches. |
 | **Blacksmith** | 30 logs, 10 stone | 2x2 | 1 blacksmith. Turns 1 iron and 1 log into 1 tool. |
 | **Stockpile** | free | 4x4 | Stores 400 units of materials, fuel, and tools. |
@@ -79,9 +79,13 @@ You can also open the **Professions** panel (`P`). Each row shows `assigned / ma
 
 Foresters cut mature trees and plant saplings, then goods go to the output buffer and back to storage. Logs appear in the top bar. Laborers who have nothing to deliver also empty full workplace buffers into storage and wait near the storage buildings.
 
-### 5. Build a farm and staff it
+### 5. Build a crop field and staff it
 
-Click **Farm** and place it on a 3x3 patch of grass. Up to 3 laborers become farmers once it is built, as in step 4. Food rises as farmers harvest and carry it to storage.
+Click a **Crop Field** size in the build menu (or press `R` while placing to cycle 4x4, 6x6 and 8x8) and place it on open grass. Up to 4 laborers become farmers once it is built, as in step 4. Settlers can walk across fields.
+
+A field follows the year. In spring farmers plow and plant empty cells one by one. Crops grow through summer (cabbage ripens in late summer, wheat in early autumn). In autumn farmers harvest ripe cells, each giving 2 of the crop, which laborers and farmers carry to storage. At the start of winter every cell still in the ground is lost to frost, with a toast. Fields hold more cells than a few farmers can work, so match the size to your farmers.
+
+Select a field to see its crop and planted, ripe and harvested counts, and to pick Wheat or Cabbage. A change applies next spring, except while nothing is planted yet. A field built after spring waits for the next spring.
 
 Settlers eat from their house when they are hungry (60 or more), taking the most plentiful kind first. A hungry settler who is away walks home to eat. Homeless settlers eat directly at a storage building. If their house has no food, they starve and their health falls.
 
@@ -102,8 +106,8 @@ Births happen when a house has at least 2 settlers, room for another, and at lea
 
 The year has 12 months grouped into four seasons: spring, summer, autumn, and winter. Each month lasts 60 seconds at normal speed, so one season is roughly 3 minutes.
 
-- **Summer:** farms run at 1.5 times their normal speed. Stock up.
-- **Winter:** farms stop completely. Unheated settlers lose warmth, and then health.
+- **Summer:** crops grow. Stock up on goods you can gather.
+- **Winter:** fields lie empty, and anything unharvested is lost. Unheated settlers lose warmth, and then health.
 
 To keep settlers warm in winter, each house with residents burns 1 firewood every 20 seconds from its own stock. Settlers outside lose warmth; below 40 they go home to warm up (interrupting work) until it is back above 90, as long as the house is heated. Without firewood, warmth drops to 0 and health falls. Build a **Woodcutter** before winter: it turns logs into firewood, which laborers carry to storage and residents carry home. The toast for "Winter" is a reminder.
 
@@ -121,7 +125,7 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 
 - Keep enough laborers: they carry all construction materials and also haul workplace output. Too many jobs leaves nobody to deliver.
 - Build a house before your first birth is possible, since births need room.
-- Place the farm and workplaces close to houses to shorten settler trips.
+- Place fields and workplaces close to houses to shorten settler trips.
 - If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
 - Keep a woodcutter running and a blacksmith supplied with iron before the first winter.
 - Watch the firewood count in winter, and the log count when you build.
