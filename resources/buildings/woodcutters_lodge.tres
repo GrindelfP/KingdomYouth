@@ -11,5 +11,5 @@ footprint = Vector2i(2, 2)
 cost = {
 &"logs": 10
 }
-build_time = 5.0
+build_time = 15.0
 job = ExtResource("2_job")

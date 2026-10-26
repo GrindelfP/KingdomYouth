@@ -8,3 +8,7 @@ extends Resource
 @export var output_amount := 1
 @export var target_terrain := ""
 @export var seasonal := false
+
+
+func profession_id() -> StringName:
+	return StringName(job_name.to_lower().replace(" ", "_"))

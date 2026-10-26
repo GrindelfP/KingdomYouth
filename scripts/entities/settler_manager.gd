@@ -6,6 +6,7 @@ signal settler_born(settler: Settler)
 signal settler_died(settler: Settler)
 
 const STARTING_SETTLER_COUNT := 5
+const STARTING_BUILDERS := 2
 const POPULATION_TICK := 1.0
 const BIRTH_COOLDOWN := 45.0
 const BIRTH_MIN_FOOD := 10
@@ -15,7 +16,7 @@ const FUEL_PER_HEATING := 1
 
 var _world: WorldGrid
 var _pathfinder: GridPathfinder
-var _buildings: Node2D
+var _buildings: BuildController
 var _tick_accumulator := 0.0
 var _next_display_id := 1
 
@@ -57,7 +58,9 @@ func _spawn_starting_settlers() -> void:
 				cells.append(grid_pos)
 	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.distance_squared_to(center) < b.distance_squared_to(center))
 	for i in mini(STARTING_SETTLER_COUNT, cells.size()):
-		_spawn_settler(cells[i])
+		var settler := _spawn_settler(cells[i])
+		if i < STARTING_BUILDERS:
+			settler.profession = Professions.BUILDER
 
 
 func clear_settlers() -> void:
@@ -79,6 +82,7 @@ func to_save_data() -> Array:
 			"health": settler.needs.health,
 			"carried_id": String(settler.carried_id),
 			"carried_amount": settler.carried_amount,
+			"profession": String(settler.profession),
 			"home": WorldGrid.cell_to_json(settler.home.origin) if settler.home else null,
 			"job": WorldGrid.cell_to_json(settler.worker.building.origin) if settler.worker.building else null,
 		})
@@ -97,6 +101,8 @@ func from_save_data(entries: Array, buildings: BuildController) -> void:
 		settler.needs.health = float(entry["health"])
 		if int(entry["carried_amount"]) > 0 and ResourceCatalog.has(StringName(entry["carried_id"])):
 			settler.set_carried(StringName(entry["carried_id"]), int(entry["carried_amount"]))
+		var profession := StringName(entry["profession"])
+		settler.profession = profession if profession == Professions.BUILDER else Professions.LABORER
 		if entry["home"] != null:
 			var house := buildings.find_building(WorldGrid.cell_from_json(entry["home"]))
 			if house:
@@ -112,7 +118,7 @@ func _spawn_settler(grid_pos: Vector2i) -> Settler:
 	settler.display_id = _next_display_id
 	_next_display_id += 1
 	add_child(settler)
-	settler.setup(_world, _pathfinder, grid_pos)
+	settler.setup(_world, _pathfinder, _buildings, grid_pos)
 	settler.needs.died.connect(_on_settler_died.bind(settler))
 	population_changed.emit(population())
 	return settler

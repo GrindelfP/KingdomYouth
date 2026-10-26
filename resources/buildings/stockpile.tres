@@ -7,6 +7,6 @@ script = ExtResource("1_def")
 id = &"stockpile"
 display_name = "Stockpile"
 footprint = Vector2i(4, 4)
-build_time = 4.0
+build_time = 12.0
 storage_capacity = 400
 storage_categories = Array[int]([0, 1, 2])

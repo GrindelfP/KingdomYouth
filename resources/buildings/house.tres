@@ -10,5 +10,5 @@ footprint = Vector2i(2, 2)
 cost = {
 &"logs": 15
 }
-build_time = 6.0
+build_time = 20.0
 housing_capacity = 4

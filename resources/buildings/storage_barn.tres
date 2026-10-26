@@ -11,6 +11,6 @@ cost = {
 &"logs": 40,
 &"stone": 20
 }
-build_time = 6.0
+build_time = 30.0
 storage_capacity = 600
 storage_categories = Array[int]([3, 2, 1])

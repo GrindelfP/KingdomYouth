@@ -15,6 +15,8 @@ var world: WorldGrid
 var pathfinder: GridPathfinder
 var needs: Needs
 var worker: Worker
+var buildings: BuildController
+var profession: StringName = Professions.LABORER
 var home: Building
 var display_id := 0
 var carried_id: StringName
@@ -35,9 +37,10 @@ func _ready() -> void:
 	add_child(worker)
 
 
-func setup(world_grid: WorldGrid, grid_pathfinder: GridPathfinder, grid_pos: Vector2i) -> void:
+func setup(world_grid: WorldGrid, grid_pathfinder: GridPathfinder, build_controller: BuildController, grid_pos: Vector2i) -> void:
 	world = world_grid
 	pathfinder = grid_pathfinder
+	buildings = build_controller
 	_last_cell = grid_pos
 	global_position = world.grid_to_world(grid_pos)
 

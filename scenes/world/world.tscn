@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://b0qwimmso5dir"]
+[gd_scene load_steps=11 format=3 uid="uid://b0qwimmso5dir"]
 
 [ext_resource type="Script" uid="uid://bixt1yxib3b5a" path="res://scripts/world/world_grid.gd" id="1_grid"]
 [ext_resource type="TileSet" uid="uid://b1jyknmox17ev" path="res://resources/terrain_tileset.tres" id="2_tiles"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://cy32elsnru8ud" path="res://scripts/world/job_controller.gd" id="7_jobs"]
 [ext_resource type="Script" uid="uid://c8s001gkuj1wh" path="res://scripts/ui/hud.gd" id="9_hud"]
 [ext_resource type="Script" path="res://scripts/world/game_bootstrap.gd" id="10_bootstrap"]
+[ext_resource type="Script" path="res://scripts/entities/labor_manager.gd" id="11_labor"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1_grid")
@@ -27,6 +28,9 @@ script = ExtResource("4_build")
 
 [node name="Settlers" type="Node2D" parent="."]
 script = ExtResource("6_settlers")
+
+[node name="Labor" type="Node" parent="."]
+script = ExtResource("11_labor")
 
 [node name="Jobs" type="Node" parent="."]
 script = ExtResource("7_jobs")

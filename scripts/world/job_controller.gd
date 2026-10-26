@@ -10,6 +10,7 @@ var _buildings: BuildController
 var _settlers: SettlerManager
 var _selected_settler: Settler
 var _selected_building: Building
+var _selected_site: ConstructionSite
 
 
 func _ready() -> void:
@@ -26,9 +27,21 @@ func get_selected_building() -> Building:
 	return _selected_building if is_instance_valid(_selected_building) else null
 
 
+func get_selected_site() -> ConstructionSite:
+	return _selected_site if is_instance_valid(_selected_site) and _selected_site.is_alive() else null
+
+
+func cancel_selected_site() -> void:
+	var site := get_selected_site()
+	if site:
+		_buildings.cancel_site(site)
+	clear_selection()
+
+
 func clear_selection() -> void:
 	_selected_settler = null
 	_selected_building = null
+	_selected_site = null
 	selection_changed.emit()
 
 
@@ -37,21 +50,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("select_or_assign"):
 		_click(_world.get_global_mouse_position())
+	elif event.is_action_pressed("delete_selected"):
+		cancel_selected_site()
 	elif event.is_action_pressed("cancel_build"):
+		var site := _buildings.find_site_at(_world.world_to_grid(_world.get_global_mouse_position()))
+		if event is InputEventMouseButton and site:
+			_buildings.cancel_site(site)
 		clear_selection()
 
 
 func _click(world_pos: Vector2) -> void:
 	var settler := _settler_at(world_pos)
 	if settler:
+		clear_selection()
 		_selected_settler = settler
-		_selected_building = null
 		selection_changed.emit()
 		return
-	var building := _building_at(_world.world_to_grid(world_pos))
+	var grid_pos := _world.world_to_grid(world_pos)
+	var site := _buildings.find_site_at(grid_pos)
+	if site:
+		clear_selection()
+		_selected_site = site
+		selection_changed.emit()
+		return
+	var building := _building_at(grid_pos)
 	if building:
+		clear_selection()
 		_selected_building = building
-		_selected_settler = null
 		selection_changed.emit()
 		return
 	clear_selection()

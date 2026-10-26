@@ -1,7 +1,7 @@
 extends Node
 
 const SAVE_PATH := "user://savegame.json"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 var pending_load := false
 

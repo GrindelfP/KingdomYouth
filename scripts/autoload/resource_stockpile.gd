@@ -52,6 +52,16 @@ func find_storages(id: StringName, from: Vector2i) -> Array[Building]:
 	return result
 
 
+func find_sources(id: StringName, from: Vector2i) -> Array[Building]:
+	var result: Array[Building] = []
+	for building in _storages:
+		if building.storage.get_amount(id) > 0:
+			result.append(building)
+	result.sort_custom(func(a: Building, b: Building) -> bool:
+		return _distance(a, from) < _distance(b, from))
+	return result
+
+
 func get_amount(id: StringName) -> int:
 	var total := 0
 	for building in _storages:

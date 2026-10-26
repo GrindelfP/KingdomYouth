@@ -3,6 +3,7 @@ extends Node2D
 
 signal hint_changed(text: String)
 signal construction_completed(building: Building)
+signal construction_cancelled(def: BuildingDef)
 
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
@@ -73,15 +74,12 @@ func get_placement_error(def: BuildingDef, origin: Vector2i) -> String:
 			return "tile is occupied"
 		if not _world.is_buildable(cell):
 			return "terrain is not buildable"
-	if not ResourceStockpile.can_afford(def.cost):
-		return "not enough resources"
 	return ""
 
 
 func try_place(def: BuildingDef, origin: Vector2i) -> bool:
 	if get_placement_error(def, origin) != "":
 		return false
-	ResourceStockpile.spend(def.cost)
 	_world.set_occupied(def.get_cells(origin), true)
 	var site := ConstructionSite.new()
 	add_child(site)
@@ -106,12 +104,45 @@ func add_building(def: BuildingDef, origin: Vector2i) -> Building:
 	return building
 
 
-func add_construction_site(def: BuildingDef, origin: Vector2i, progress: float) -> ConstructionSite:
+func get_sites() -> Array[ConstructionSite]:
+	var sites: Array[ConstructionSite] = []
+	for child in get_children():
+		if child is ConstructionSite and child.is_alive():
+			sites.append(child as ConstructionSite)
+	return sites
+
+
+func get_buildings() -> Array[Building]:
+	var result: Array[Building] = []
+	for child in get_children():
+		if child is Building:
+			result.append(child as Building)
+	return result
+
+
+func find_site_at(grid_pos: Vector2i) -> ConstructionSite:
+	for site in get_sites():
+		if site.occupies(grid_pos):
+			return site
+	return null
+
+
+func cancel_site(site: ConstructionSite) -> void:
+	if not is_instance_valid(site) or not site.is_alive():
+		return
+	site.refund()
+	_world.set_occupied(site.def.get_cells(site.origin), false)
+	site.queue_free()
+	construction_cancelled.emit(site.def)
+
+
+func add_construction_site(def: BuildingDef, origin: Vector2i, progress: float, delivered := {}) -> ConstructionSite:
 	_world.set_occupied(def.get_cells(origin), true)
 	var site := ConstructionSite.new()
 	add_child(site)
 	site.setup(_world, def, origin)
 	site.progress = progress
+	site.delivered.from_save_data(delivered)
 	site.completed.connect(_on_site_completed)
 	return site
 
@@ -139,6 +170,7 @@ func to_save_data() -> Array:
 				"id": String(child.def.id),
 				"origin": WorldGrid.cell_to_json(child.origin),
 				"heat_left": child.heat_left,
+				"desired_workers": child.desired_workers,
 				"birth_cooldown": child.birth_cooldown,
 				"storage": child.storage.to_save_data() if child.storage else {},
 				"output": child.output.to_save_data() if child.output else {},
@@ -149,6 +181,7 @@ func to_save_data() -> Array:
 				"id": String(child.def.id),
 				"origin": WorldGrid.cell_to_json(child.origin),
 				"progress": child.progress,
+				"delivered": child.delivered.to_save_data(),
 			})
 	return entries
 
@@ -159,10 +192,11 @@ func from_save_data(entries: Array) -> void:
 		var def := _def_by_id(entry["id"])
 		var origin := WorldGrid.cell_from_json(entry["origin"])
 		if entry["kind"] == "site":
-			add_construction_site(def, origin, float(entry["progress"]))
+			add_construction_site(def, origin, float(entry["progress"]), entry["delivered"])
 		else:
 			var building := add_building(def, origin)
 			building.heat_left = float(entry["heat_left"])
+			building.desired_workers = int(entry["desired_workers"])
 			building.birth_cooldown = float(entry["birth_cooldown"])
 			if building.storage:
 				building.storage.from_save_data(entry["storage"])

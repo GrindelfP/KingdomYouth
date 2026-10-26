@@ -7,14 +7,16 @@ const PANEL_WIDTH := 280.0
 var _jobs: JobController
 var _settlers: SettlerManager
 var _build: BuildController
+var _labor: LaborManager
 var _content: VBoxContainer
 var _refresh_left := 0.0
 
 
-func setup(jobs: JobController, settlers: SettlerManager, build: BuildController) -> void:
+func setup(jobs: JobController, settlers: SettlerManager, build: BuildController, labor: LaborManager) -> void:
 	_jobs = jobs
 	_settlers = settlers
 	_build = build
+	_labor = labor
 	custom_minimum_size = Vector2(PANEL_WIDTH, 0)
 	_content = VBoxContainer.new()
 	add_child(_content)
@@ -24,7 +26,7 @@ func setup(jobs: JobController, settlers: SettlerManager, build: BuildController
 
 func _process(delta: float) -> void:
 	_refresh_left -= delta
-	if _refresh_left <= 0.0:
+	if _refresh_left <= 0.0 and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_refresh_left = REFRESH_SECONDS
 		_rebuild()
 
@@ -35,21 +37,25 @@ func _rebuild() -> void:
 		child.queue_free()
 	var settler := _jobs.get_selected_settler()
 	var building := _jobs.get_selected_building()
-	visible = settler != null or building != null
+	var site := _jobs.get_selected_site()
+	visible = settler != null or building != null or site != null
 	if settler:
 		_build_settler_view(settler)
+	elif site:
+		_build_site_view(site)
 	elif building:
 		_build_building_view(building)
 
 
 func _build_settler_view(settler: Settler) -> void:
 	_add_title("Settler %d" % settler.display_id)
-	var job := "none"
+	_add_line("Profession: " + Professions.display_name(settler.profession))
+	var task := settler.worker.get_state_name()
 	if settler.worker.building:
-		job = "%s, %s" % [settler.worker.building.def.display_name, settler.worker.get_state_name()]
-		if settler.worker.is_paused():
-			job += " (paused)"
-	_add_line("Job: " + job)
+		task = "%s, %s" % [settler.worker.building.def.display_name, task]
+	if settler.worker.is_paused():
+		task += " (paused)"
+	_add_line("Task: " + task)
 	var home := "none (exposed)"
 	if settler.home:
 		home = "%s at %s" % [settler.home.def.display_name, settler.home.origin]
@@ -60,8 +66,16 @@ func _build_settler_view(settler: Settler) -> void:
 	_add_bar("Rest", settler.needs.rest)
 	_add_bar("Warmth", settler.needs.warmth)
 	_add_bar("Health", settler.needs.health)
-	if settler.worker.building:
-		_add_button("Unassign job", func() -> void: settler.worker.unassign())
+	_add_button("Close", _jobs.clear_selection)
+
+
+func _build_site_view(site: ConstructionSite) -> void:
+	_add_title("%s (under construction)" % site.def.display_name)
+	_add_line(site.status_text())
+	_add_line("Progress %d%%" % roundi(site.progress_ratio() * 100.0))
+	for id in site.required:
+		_add_line("  %s: %d / %d" % [ResourceCatalog.display_name(id), site.delivered.get_amount(id), site.required[id]])
+	_add_button("Cancel construction", _jobs.cancel_selected_site)
 	_add_button("Close", _jobs.clear_selection)
 
 
@@ -69,17 +83,12 @@ func _build_building_view(building: Building) -> void:
 	_add_title(building.def.display_name)
 	var job := building.def.job
 	if job:
-		_add_line("Workers %d / %d" % [building.workers.size(), job.slots])
+		_add_line("Workers %d / %d" % [building.workers.size(), building.desired_workers])
+		_add_stepper("Desired workers: %d" % building.desired_workers,
+			func() -> void: _labor.set_desired_workers(building, building.desired_workers - 1),
+			func() -> void: _labor.set_desired_workers(building, building.desired_workers + 1))
 		for worker_settler in building.workers:
-			_add_row("Settler %d" % worker_settler.display_id, "Remove", func() -> void: worker_settler.worker.unassign())
-		if building.has_free_job_slot():
-			var idle := 0
-			for settler in _settlers.living_settlers():
-				if settler.worker.building == null:
-					idle += 1
-					_add_row("Settler %d (idle)" % settler.display_id, "Assign", func() -> void: settler.worker.assign(building))
-			if idle == 0:
-				_add_line("No idle settlers.")
+			_add_line("  Settler %d" % worker_settler.display_id)
 		_add_inventory("Output", building.output)
 		if building.is_output_blocked():
 			_add_line("Storage full: output cannot be hauled, work is stalled.")
@@ -133,14 +142,15 @@ func _add_button(text: String, action: Callable) -> void:
 	_content.add_child(button)
 
 
-func _add_row(text: String, button_text: String, action: Callable) -> void:
+func _add_stepper(text: String, on_minus: Callable, on_plus: Callable) -> void:
 	var row := HBoxContainer.new()
 	var label := Label.new()
 	label.text = text
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
-	var button := Button.new()
-	button.text = button_text
-	button.pressed.connect(action)
-	row.add_child(button)
+	for entry in [["-", on_minus], ["+", on_plus]]:
+		var button := Button.new()
+		button.text = entry[0]
+		button.pressed.connect(entry[1])
+		row.add_child(button)
 	_content.add_child(row)

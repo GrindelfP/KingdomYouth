@@ -19,6 +19,8 @@ const FOOD_COLOR := Color(0.88, 0.75, 0.27)
 var _build: BuildController
 var _jobs: JobController
 var _settlers: SettlerManager
+var _labor: LaborManager
+var _professions: ProfessionPanel
 var _resource_labels: Dictionary = {}
 var _food_box: Control
 var _storage_label: Label
@@ -34,6 +36,7 @@ func _ready() -> void:
 	_build = get_parent().get_node("Buildings")
 	_jobs = get_parent().get_node("Jobs")
 	_settlers = get_parent().get_node("Settlers")
+	_labor = get_parent().get_node("Labor")
 
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -67,7 +70,12 @@ func _ready() -> void:
 	info.grow_vertical = Control.GROW_DIRECTION_BOTH
 	info.offset_right = -16
 	root.add_child(info)
-	info.setup(_jobs, _settlers, _build)
+	info.setup(_jobs, _settlers, _build, _labor)
+
+	_professions = ProfessionPanel.new()
+	_professions.position = Vector2(16, 84)
+	root.add_child(_professions)
+	_professions.setup(_labor)
 
 	ResourceStockpile.resource_changed.connect(_on_resource_changed)
 	for id in BAR_GOODS:
@@ -75,6 +83,7 @@ func _ready() -> void:
 	_refresh_food()
 	_build.hint_changed.connect(func(text: String) -> void: _hint_label.text = text)
 	_build.construction_completed.connect(_on_construction_completed)
+	_build.construction_cancelled.connect(func(def: BuildingDef) -> void: add_toast("Construction cancelled: %s. Delivered materials returned." % def.display_name))
 	_settlers.settler_born.connect(_on_settler_born)
 	_settlers.settler_died.connect(_on_settler_died)
 	TimeManager.season_changed.connect(_on_season_changed)
@@ -85,7 +94,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_time_label.text = "%s, Year %d" % [TimeManager.get_month_name(), TimeManager.get_year()]
 	_update_storage()
-	_population_label.text = "Population %d (working %d)" % [_settlers.population(), _settlers.employed_count()]
+	_population_label.text = "Population %d (working %d, builders %d)" % [_settlers.population(), _settlers.employed_count(), _labor.get_count(Professions.BUILDER)]
 
 
 func _update_storage() -> void:
@@ -142,6 +151,7 @@ func _build_top_bar() -> PanelContainer:
 		button.toggle_mode = true
 		_speed_buttons.append(button)
 		row.add_child(button)
+	row.add_child(_make_button("Professions (P)", func() -> void: _professions.visible = not _professions.visible))
 	row.add_child(_make_button("Save", _save_game))
 	row.add_child(_make_button("Load", _load_game))
 	row.add_child(_make_button("New game", SaveManager.start_new_game))
@@ -157,7 +167,9 @@ func _make_button(text: String, action: Callable) -> Button:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("toggle_pause"):
+	if event.is_action_pressed("professions_toggle"):
+		_professions.visible = not _professions.visible
+	elif event.is_action_pressed("toggle_pause"):
 		TimeManager.toggle_pause()
 	elif event.is_action_pressed("speed_1"):
 		TimeManager.set_speed(1)

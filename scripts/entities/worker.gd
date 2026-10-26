@@ -1,25 +1,35 @@
 class_name Worker
 extends Node
 
-enum State { IDLE, TRAVEL, WORK, PICKUP, DELIVER }
+enum State { IDLE, TRAVEL, WORK, PICKUP, DELIVER, BUILD, RETURN }
 
 const NO_TARGET := Vector2i(-1, -1)
 const RETRY_DELAY := 3.0
+const IDLE_RETRY := 1.0
 const MAX_TARGET_CANDIDATES := 30
-const HAUL_SIZE := 10
+const HAUL_SIZE := Hauler.CARRY_SIZE
+const LABORER_PICKUP_MIN := 5
+const RALLY_RADIUS := 4
 
 var building: Building
 var _settler: Settler
+var _hauler: Hauler
 var _state := State.IDLE
 var _target := NO_TARGET
 var _work_left := 0.0
 var _retry_left := 0.0
 var _paused := false
-var _storage: Building
+var _site: ConstructionSite
+var _reserved_site: ConstructionSite
+var _reserved_id := &""
+var _reserved_amount := 0
+var _claimed_building: Building
+var _claimed_amount := 0
 
 
 func _ready() -> void:
 	_settler = get_parent()
+	_hauler = Hauler.new(_settler)
 	_settler.arrived.connect(_on_arrived)
 	_settler.path_failed.connect(_on_path_failed)
 
@@ -30,6 +40,7 @@ func assign(target_building: Building) -> bool:
 	unassign()
 	building = target_building
 	building.workers.append(_settler)
+	_settler.profession = building.job_def().profession_id()
 	return true
 
 
@@ -37,7 +48,15 @@ func unassign() -> void:
 	cancel_task()
 	if building:
 		building.workers.erase(_settler)
+		_settler.profession = Professions.LABORER
 	building = null
+
+
+func set_profession(profession: StringName) -> void:
+	if profession == _settler.profession:
+		return
+	unassign()
+	_settler.profession = profession
 
 
 func is_paused() -> bool:
@@ -59,36 +78,59 @@ func resume() -> void:
 
 func cancel_task() -> void:
 	if _state != State.IDLE:
+		_hauler.cancel()
 		_settler.cancel_movement()
 		_state = State.IDLE
 		_target = NO_TARGET
 		_work_left = 0.0
-		_storage = null
+		_site = null
+	_release_claims()
 	_return_carried()
 
 
 func _process(delta: float) -> void:
-	if _paused or (building == null and not _settler.is_carrying()):
+	if _paused:
 		return
 	match _state:
 		State.IDLE:
 			if _retry_left > 0.0:
 				_retry_left -= delta
 			else:
-				_start_travel()
+				_plan()
 		State.WORK:
 			_work_left -= delta
 			if _work_left <= 0.0:
 				_finish_work()
+		State.BUILD:
+			if _site and _site.is_alive() and _site.is_ready():
+				_site.add_work(delta)
+			else:
+				_site = null
+				_state = State.IDLE
 
 
-func _start_travel() -> void:
+func _plan() -> void:
 	if _settler.is_carrying():
-		if not _begin_delivery():
+		_state = State.DELIVER
+		if not _hauler.deliver_to_storage(_on_trip_done):
+			_state = State.IDLE
 			_retry_left = RETRY_DELAY
 		return
+	var started := false
+	match _settler.profession:
+		Professions.LABORER:
+			started = _plan_hauling() or _plan_rally()
+		Professions.BUILDER:
+			started = _plan_construction() or _plan_hauling() or _plan_rally()
+		_:
+			started = _plan_job()
+	if not started and _state == State.IDLE:
+		_retry_left = IDLE_RETRY if building == null else RETRY_DELAY
+
+
+func _plan_job() -> bool:
 	if building == null:
-		return
+		return false
 	var job := building.job_def()
 	var target := NO_TARGET
 	var can_work := building.output.free_space() >= job.output_amount
@@ -99,13 +141,106 @@ func _start_travel() -> void:
 	var stored := building.output.total()
 	if stored > 0 and (stored >= HAUL_SIZE or target == NO_TARGET):
 		if _begin_pickup():
-			return
+			return true
 	if target == NO_TARGET:
-		_retry_left = RETRY_DELAY
-		return
+		return false
 	_target = target
 	_state = State.TRAVEL
 	_settler.move_to(target)
+	return true
+
+
+func _plan_hauling() -> bool:
+	return _plan_materials() or _plan_output_pickup()
+
+
+func _plan_materials() -> bool:
+	var from := _settler.get_grid_pos()
+	for site in _sites_by_distance(from):
+		for id in site.required:
+			var missing := site.missing(id)
+			if missing <= 0:
+				continue
+			for source in ResourceStockpile.find_sources(id, from):
+				var amount := mini(mini(missing, HAUL_SIZE), source.storage.get_amount(id))
+				_reserved_site = site
+				_reserved_id = id
+				_reserved_amount = amount
+				site.reserve(id, amount)
+				_state = State.PICKUP
+				if _hauler.fetch(source, source.storage, id, amount, _on_materials_taken):
+					return true
+				_release_claims()
+				_state = State.IDLE
+	return false
+
+
+func _plan_output_pickup() -> bool:
+	var from := _settler.get_grid_pos()
+	for workplace in _workplaces_by_distance(from):
+		var available := workplace.output.total() - workplace.output_claimed
+		if available < LABORER_PICKUP_MIN:
+			continue
+		var id := _richest_output(workplace)
+		if id == &"" or ResourceStockpile.find_storages(id, workplace.get_center_cell()).is_empty():
+			continue
+		_claimed_building = workplace
+		_claimed_amount = mini(available, HAUL_SIZE)
+		workplace.output_claimed += _claimed_amount
+		_state = State.PICKUP
+		if _hauler.fetch(workplace, workplace.output, id, _claimed_amount, _on_output_taken):
+			return true
+		_release_claims()
+		_state = State.IDLE
+	return false
+
+
+func _plan_construction() -> bool:
+	var from := _settler.get_grid_pos()
+	for site in _sites_by_distance(from):
+		if not site.is_ready():
+			continue
+		_state = State.TRAVEL
+		if _hauler.walk_to(site, _on_site_reached.bind(site.get_instance_id())):
+			return true
+		_state = State.IDLE
+	return false
+
+
+func _plan_rally() -> bool:
+	var center := WorldGrid.MAP_RECT.get_center()
+	var best: Building
+	for storage in ResourceStockpile.get_storages():
+		if best == null or _manhattan(storage.get_center_cell(), center) < _manhattan(best.get_center_cell(), center):
+			best = storage
+	if best == null or _manhattan(best.get_center_cell(), _settler.get_grid_pos()) <= RALLY_RADIUS + best.def.footprint.x:
+		return false
+	_state = State.RETURN
+	if _hauler.walk_to(best, _on_trip_done):
+		return true
+	_state = State.IDLE
+	return false
+
+
+func _sites_by_distance(from: Vector2i) -> Array[ConstructionSite]:
+	var sites := _settler.buildings.get_sites()
+	sites.sort_custom(func(a: ConstructionSite, b: ConstructionSite) -> bool:
+		return _manhattan(a.get_center_cell(), from) < _manhattan(b.get_center_cell(), from))
+	return sites
+
+
+func _workplaces_by_distance(from: Vector2i) -> Array[Building]:
+	var workplaces: Array[Building] = []
+	for candidate in _settler.buildings.get_buildings():
+		if candidate.output != null and candidate.output.total() > 0:
+			workplaces.append(candidate)
+	workplaces.sort_custom(func(a: Building, b: Building) -> bool:
+		return _manhattan(a.get_center_cell(), from) < _manhattan(b.get_center_cell(), from))
+	return workplaces
+
+
+func _manhattan(a: Vector2i, b: Vector2i) -> int:
+	return absi(a.x - b.x) + absi(a.y - b.y)
 
 
 func _find_target() -> Vector2i:
@@ -113,63 +248,44 @@ func _find_target() -> Vector2i:
 	var from := _settler.get_grid_pos()
 	if job.target_terrain.is_empty():
 		for cell in building.get_access_cells():
-			if _is_reachable(from, cell):
+			if _hauler.is_reachable(cell):
 				return cell
 		return NO_TARGET
 	var candidates := _settler.world.get_terrain_cells(job.target_terrain, building.get_center_cell())
 	for cell in candidates.slice(0, MAX_TARGET_CANDIDATES):
-		if _is_reachable(from, cell):
+		if not _settler.pathfinder.find_path(from, cell).is_empty():
 			return cell
 	return NO_TARGET
-
-
-func _is_reachable(from: Vector2i, to: Vector2i) -> bool:
-	return not _settler.pathfinder.find_path(from, to).is_empty()
 
 
 func _begin_pickup() -> bool:
-	var id := _richest_output()
+	var id := _richest_output(building)
 	if id == &"" or ResourceStockpile.find_storages(id, building.get_center_cell()).is_empty():
 		return false
-	var cell := _reachable_access_cell(building)
-	if cell == NO_TARGET:
-		return false
-	_target = cell
 	_state = State.PICKUP
-	_settler.move_to(cell)
-	return true
-
-
-func _begin_delivery() -> bool:
-	var from := _settler.get_grid_pos()
-	for storage in ResourceStockpile.find_storages(_settler.carried_id, from):
-		var cell := _reachable_access_cell(storage)
-		if cell == NO_TARGET:
-			continue
-		_storage = storage
-		_target = cell
-		_state = State.DELIVER
-		_settler.move_to(cell)
+	if _hauler.fetch(building, building.output, id, HAUL_SIZE, _on_output_taken):
 		return true
+	_state = State.IDLE
 	return false
 
 
-func _reachable_access_cell(target_building: Building) -> Vector2i:
-	var from := _settler.get_grid_pos()
-	var cells := target_building.get_access_cells()
-	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
-	for cell in cells:
-		if _is_reachable(from, cell):
-			return cell
-	return NO_TARGET
-
-
-func _richest_output() -> StringName:
+func _richest_output(source: Building) -> StringName:
 	var best := &""
-	for id in building.output.ids():
-		if best == &"" or building.output.get_amount(id) > building.output.get_amount(best):
+	for id in source.output.ids():
+		if best == &"" or source.output.get_amount(id) > source.output.get_amount(best):
 			best = id
 	return best
+
+
+func _release_claims() -> void:
+	if _reserved_site and is_instance_valid(_reserved_site):
+		_reserved_site.release(_reserved_id, _reserved_amount)
+	_reserved_site = null
+	_reserved_amount = 0
+	if _claimed_building and is_instance_valid(_claimed_building):
+		_claimed_building.output_claimed = maxi(_claimed_building.output_claimed - _claimed_amount, 0)
+	_claimed_building = null
+	_claimed_amount = 0
 
 
 func _return_carried() -> void:
@@ -184,30 +300,65 @@ func _return_carried() -> void:
 	_settler.set_carried(&"", 0)
 
 
-func _on_arrived(grid_pos: Vector2i) -> void:
-	if grid_pos != _target:
+func _on_trip_done() -> void:
+	_state = State.IDLE
+	_retry_left = 0.0
+
+
+func _on_materials_taken(taken: int) -> void:
+	var site := _reserved_site
+	if taken < _reserved_amount and site and is_instance_valid(site):
+		site.release(_reserved_id, _reserved_amount - taken)
+		_reserved_amount = taken
+	if taken <= 0 or site == null or not is_instance_valid(site) or not site.is_alive():
+		_release_claims()
+		_state = State.IDLE
 		return
-	match _state:
-		State.TRAVEL:
-			_state = State.WORK
-			_work_left = _work_duration()
-		State.PICKUP:
-			var id := _richest_output()
-			_state = State.IDLE
-			if id != &"":
-				_settler.set_carried(id, building.output.take(id, HAUL_SIZE))
-				_begin_delivery()
-		State.DELIVER:
-			_state = State.IDLE
-			if is_instance_valid(_storage) and _storage.storage:
-				var accepted := _storage.storage.add(_settler.carried_id, _settler.carried_amount)
-				_settler.set_carried(_settler.carried_id, _settler.carried_amount - accepted)
-			_storage = null
-			if _settler.is_carrying():
-				_begin_delivery()
+	_state = State.DELIVER
+	if not _hauler.deliver(site, site.delivered, _on_materials_delivered):
+		_release_claims()
+		_state = State.IDLE
+
+
+func _on_materials_delivered(_accepted: int) -> void:
+	_release_claims()
+	_state = State.IDLE
+
+
+func _on_output_taken(taken: int) -> void:
+	_release_claims()
+	if taken <= 0:
+		_state = State.IDLE
+		return
+	_state = State.DELIVER
+	if not _hauler.deliver_to_storage(_on_trip_done):
+		_state = State.IDLE
+		_retry_left = RETRY_DELAY
+
+
+func _on_site_reached(site_id: int) -> void:
+	var site := instance_from_id(site_id) as ConstructionSite
+	if site != null and site.is_alive() and site.is_ready():
+		_site = site
+		_state = State.BUILD
+	else:
+		_state = State.IDLE
+
+
+func _on_arrived(grid_pos: Vector2i) -> void:
+	if _hauler.handle_arrived(grid_pos):
+		return
+	if _state == State.TRAVEL and grid_pos == _target:
+		_state = State.WORK
+		_work_left = _work_duration()
 
 
 func _on_path_failed(grid_pos: Vector2i) -> void:
+	if _hauler.handle_failed(grid_pos):
+		_release_claims()
+		_state = State.IDLE
+		_retry_left = RETRY_DELAY
+		return
 	if _state == State.IDLE or grid_pos != _target:
 		return
 	_state = State.IDLE
