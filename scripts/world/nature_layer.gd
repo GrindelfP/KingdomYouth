@@ -154,7 +154,8 @@ func _add_ghost(sprite: Sprite2D) -> void:
 
 func _set_ghost_alpha(alpha: float) -> void:
 	for ghost in _ghosts:
-		ghost.modulate.a = alpha
+		if is_instance_valid(ghost):
+			ghost.modulate.a = alpha
 
 
 func _finish_fade() -> void:

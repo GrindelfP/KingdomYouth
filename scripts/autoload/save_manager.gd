@@ -4,10 +4,11 @@ const SAVE_PATH := "user://savegame.json"
 const SAVE_VERSION := 10
 
 var pending_load := false
+var save_path := SAVE_PATH
 
 
 func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return FileAccess.file_exists(save_path)
 
 
 func save_game() -> bool:
@@ -21,7 +22,7 @@ func save_game() -> bool:
 		"buildings": world.get_node("Buildings").to_save_data(),
 		"settlers": world.get_node("Settlers").to_save_data(),
 	}
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
 		return false
 	file.store_string(JSON.stringify(data, "\t"))
@@ -32,7 +33,7 @@ func load_game() -> bool:
 	var world := _world()
 	if world == null or not has_save():
 		return false
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(save_path))
 	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != SAVE_VERSION:
 		return false
 	var buildings: BuildController = world.get_node("Buildings")
