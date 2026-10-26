@@ -3,23 +3,12 @@ extends Structure
 
 signal crops_lost(count: int)
 
-const BUILDING_COLOR := Color(0.45, 0.3, 0.15)
 const OUTPUT_CAPACITY := 20
 const FIELD_OUTPUT_CAPACITY := 40
 const FIELD_UPDATE_INTERVAL := 0.25
-const FIELD_FENCE_COLOR := Color(0.36, 0.24, 0.12)
-const FIELD_COLORS := {
-	CropField.CellState.EMPTY: Color(0.5, 0.42, 0.26),
-	CropField.CellState.PLOWED: Color(0.33, 0.22, 0.12),
-	CropField.CellState.PLANTED: Color(0.33, 0.22, 0.12),
-	CropField.CellState.GROWING: Color(0.3, 0.21, 0.12),
-	CropField.CellState.RIPE: Color(0.3, 0.21, 0.12),
-	CropField.CellState.HARVESTED: Color(0.55, 0.47, 0.28),
-}
-const SPROUT_COLOR := Color(0.45, 0.75, 0.3)
-const GROWING_COLOR := Color(0.25, 0.6, 0.2)
-const RIPE_COLORS := {&"wheat": Color(0.92, 0.78, 0.25), &"cabbage": Color(0.62, 0.82, 0.4)}
-const STUBBLE_COLOR := Color(0.72, 0.62, 0.35)
+const VISUAL_INTERVAL := 0.3
+const FIELD_Z := -5
+const GLOW_PULSE := 4.0
 const INPUT_CAPACITY := 20
 const BATCHES_PER_TRIP := 5
 const HOUSEHOLD_CAPACITY := 50
@@ -42,6 +31,12 @@ var household: Inventory
 var restock_claimed := false
 var field: CropField
 var _field_timer := 0.0
+var _visual_timer := 0.0
+var _smoke: CPUParticles2D
+var _glow: Sprite2D
+var _piles: Node2D
+var _pile_signature := ""
+var _glow_time := 0.0
 
 
 func setup(world: WorldGrid, building_def: BuildingDef, grid_origin: Vector2i) -> void:
@@ -64,6 +59,9 @@ func setup(world: WorldGrid, building_def: BuildingDef, grid_origin: Vector2i) -
 		world.set_open(def.get_cells(origin), true)
 		TimeManager.season_changed.connect(_on_season_changed)
 		TimeManager.month_changed.connect(_on_month_changed)
+		z_index = FIELD_Z
+	else:
+		_build_visuals()
 	queue_redraw()
 
 
@@ -76,6 +74,13 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	_visual_timer += delta
+	if _visual_timer >= VISUAL_INTERVAL:
+		_visual_timer = 0.0
+		_update_effects()
+	if _glow != null and _glow.visible:
+		_glow_time += delta
+		_glow.modulate.a = 0.55 + 0.25 * sin(_glow_time * GLOW_PULSE) + 0.1 * sin(_glow_time * 9.3)
 	if field == null:
 		return
 	_field_timer += delta
@@ -210,43 +215,111 @@ func _on_season_changed(season: int) -> void:
 			crops_lost.emit(lost)
 
 
-func _draw() -> void:
-	if field:
-		_draw_field()
+func _build_visuals() -> void:
+	_sprite = Sprite2D.new()
+	_sprite.centered = false
+	add_child(_sprite)
+	if def.is_storage() and def.id == &"stockpile":
+		_piles = Node2D.new()
+		add_child(_piles)
+	var tex := BuildingArt.texture(def, _winter)
+	if BuildingArt.SMOKE_POINTS.has(def.id):
+		_smoke = _make_smoke(BuildingArt.sprite_point_to_local(BuildingArt.SMOKE_POINTS[def.id], tex))
+		add_child(_smoke)
+	if BuildingArt.GLOW_POINTS.has(def.id):
+		_glow = Sprite2D.new()
+		_glow.texture = BuildingArt.GLOW_TEXTURE
+		_glow.position = BuildingArt.sprite_point_to_local(BuildingArt.GLOW_POINTS[def.id], tex)
+		_glow.scale = Vector2(1.5, 1.0)
+		var material := CanvasItemMaterial.new()
+		material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_glow.material = material
+		_glow.visible = false
+		add_child(_glow)
+	_refresh_art()
+	_apply_outline()
+
+
+func _make_smoke(at: Vector2) -> CPUParticles2D:
+	var smoke := CPUParticles2D.new()
+	smoke.texture = BuildingArt.SMOKE_TEXTURE
+	smoke.position = at
+	smoke.amount = 18
+	smoke.lifetime = 2.6
+	smoke.local_coords = false
+	smoke.direction = Vector2(0.3, -1.0)
+	smoke.spread = 14.0
+	smoke.gravity = Vector2(5.0, -4.0)
+	smoke.initial_velocity_min = 7.0
+	smoke.initial_velocity_max = 12.0
+	smoke.scale_amount_min = 1.0
+	smoke.scale_amount_max = 1.7
+	var fade := Gradient.new()
+	fade.offsets = PackedFloat32Array([0.0, 0.7, 1.0])
+	fade.colors = PackedColorArray([Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.75), Color(1, 1, 1, 0.0)])
+	smoke.color_ramp = fade
+	smoke.emitting = false
+	return smoke
+
+
+func _refresh_art() -> void:
+	if field != null:
+		queue_redraw()
 		return
-	draw_rect(Rect2(Vector2.ZERO, _size), BUILDING_COLOR)
+	if _sprite == null:
+		return
+	var tex := BuildingArt.texture(def, _winter)
+	_sprite.texture = tex
+	_sprite.offset = BuildingArt.sprite_offset(tex)
+	_pile_signature = ""
+	_update_effects()
 
 
-func _draw_field() -> void:
+func _update_effects() -> void:
+	if _smoke != null:
+		_smoke.emitting = is_heated() if def.housing_capacity > 0 else not workers.is_empty()
+	if _glow != null:
+		_glow.visible = not workers.is_empty()
+	if _piles != null:
+		_refresh_piles()
+
+
+func _refresh_piles() -> void:
+	var stages := {}
+	var signature := "%d" % int(_winter)
+	for good in BuildingArt.PILE_GOODS:
+		var stage := BuildingArt.pile_stage(storage.get_amount(good))
+		stages[good] = stage
+		signature += str(stage)
+	if signature == _pile_signature:
+		return
+	_pile_signature = signature
+	for child in _piles.get_children():
+		child.queue_free()
+	var order: Array[StringName] = [&"logs", &"stone", &"firewood", &"iron", &"tools"]
+	for good in order:
+		var stage: int = stages[good]
+		if stage == 0:
+			continue
+		var pile := Sprite2D.new()
+		pile.centered = false
+		pile.texture = BuildingArt.pile_texture(good, stage, _winter)
+		pile.position = BuildingArt.PILE_SLOTS[good] - BuildingArt.PILE_BASE
+		_piles.add_child(pile)
+
+
+func _draw() -> void:
+	if field == null:
+		return
 	var tile := _world.get_tile_size()
+	var top_left := local_rect().position
+	var row_winter := _winter
 	for y in field.size:
 		for x in field.size:
 			var cell := Vector2i(x, y)
-			var top_left := Vector2(cell) * tile
 			var state := field.get_state(cell)
-			draw_rect(Rect2(top_left, tile), FIELD_COLORS[state])
-			match state:
-				CropField.CellState.PLOWED, CropField.CellState.PLANTED, CropField.CellState.GROWING, CropField.CellState.RIPE:
-					for row in 3:
-						var line_y := top_left.y + tile.y * (row + 0.5) / 3.0
-						draw_line(Vector2(top_left.x + 1.0, line_y), Vector2(top_left.x + tile.x - 1.0, line_y), Color(0.2, 0.13, 0.07), 1.0)
-			_draw_crop(top_left + tile * 0.5, tile, state, field.get_growth(cell))
-	draw_rect(Rect2(Vector2.ZERO, _size), FIELD_FENCE_COLOR, false, 2.0)
-
-
-func _draw_crop(center: Vector2, tile: Vector2, state: int, growth: float) -> void:
-	match state:
-		CropField.CellState.PLANTED:
-			draw_circle(center, tile.x * 0.1, SPROUT_COLOR)
-		CropField.CellState.GROWING:
-			draw_circle(center, tile.x * lerpf(0.15, 0.35, growth), GROWING_COLOR)
-		CropField.CellState.RIPE:
-			var color: Color = RIPE_COLORS[field.crop]
-			if field.crop == &"cabbage":
-				draw_circle(center, tile.x * 0.38, color)
-			else:
-				draw_rect(Rect2(center - tile * 0.38, tile * 0.76), color)
-		CropField.CellState.HARVESTED:
-			draw_line(center - tile * 0.25, center + tile * 0.25, STUBBLE_COLOR, 1.5)
-			draw_line(center + Vector2(-0.25, 0.25) * tile, center + Vector2(0.25, -0.25) * tile, STUBBLE_COLOR, 1.5)
-
+			var column := BuildingArt.field_column(state, field.crop, field.get_growth(cell), cell)
+			draw_texture_rect_region(BuildingArt.FIELD_TEXTURE, Rect2(top_left + Vector2(cell) * tile, tile), BuildingArt.field_region(column, row_winter))
+	draw_texture(BuildingArt.fence_texture(def.footprint.x), BuildingArt.fence_offset(def.footprint.x))
+	if _outline_mode > 0:
+		draw_rect(local_rect().grow(2.0), OUTLINE_COLORS[_outline_mode], false, 2.0)

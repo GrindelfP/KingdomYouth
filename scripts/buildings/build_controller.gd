@@ -15,6 +15,10 @@ const RADIUS_SEGMENTS := 64
 const START_SEARCH_RADIUS := 20
 const START_MARGIN := 1
 const STONE_ROAD_COST := 1
+const PREVIEW_VALID := Color(0.55, 1.0, 0.55, 0.8)
+const PREVIEW_INVALID := Color(1.0, 0.45, 0.45, 0.8)
+const TIP_OFFSET := Vector2(16.0, 18.0)
+const TIP_LAYER := 4
 
 var building_defs: Array[BuildingDef] = [
 	load("res://resources/buildings/foresters_lodge.tres"),
@@ -42,6 +46,10 @@ var _demolishing := false
 var _dragging := false
 var _drag_from := Vector2i.ZERO
 var _overlay: Node2D
+var _hovered: Structure
+var _tip_layer: CanvasLayer
+var _tip_panel: PanelContainer
+var _tip_label: Label
 
 
 func _ready() -> void:
@@ -50,11 +58,22 @@ func _ready() -> void:
 	_overlay.z_index = 100
 	_overlay.draw.connect(_draw_overlay)
 	add_child(_overlay)
+	_tip_layer = CanvasLayer.new()
+	_tip_layer.layer = TIP_LAYER
+	add_child(_tip_layer)
+	_tip_panel = PanelContainer.new()
+	_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.visible = false
+	_tip_label = Label.new()
+	_tip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(_tip_label)
+	_tip_layer.add_child(_tip_panel)
 
 
 func _process(_delta: float) -> void:
 	if _placing:
 		_hover = _world.world_to_grid(get_global_mouse_position())
+	_update_hover()
 	_overlay.queue_redraw()
 	_update_hint()
 
@@ -92,7 +111,31 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func set_highlight(structure: Structure) -> void:
+	var previous := _highlight
 	_highlight = structure
+	if is_instance_valid(previous):
+		previous.set_outline(1 if previous == _hovered else 0)
+	if is_instance_valid(structure):
+		structure.set_outline(2)
+
+
+func _update_hover() -> void:
+	var target: Structure = null
+	if not _placing and get_viewport().gui_get_hovered_control() == null:
+		var cell := _world.world_to_grid(get_global_mouse_position())
+		target = find_site_at(cell)
+		if target == null:
+			target = find_building_at(cell)
+	if target != _hovered:
+		if is_instance_valid(_hovered):
+			_hovered.set_outline(2 if _hovered == _highlight else 0)
+		_hovered = target
+		if target != null and target != _highlight:
+			target.set_outline(1)
+	_tip_panel.visible = _hovered != null and is_instance_valid(_hovered)
+	if _tip_panel.visible:
+		_tip_label.text = _hovered.display_name()
+		_tip_panel.position = get_viewport().get_mouse_position() + TIP_OFFSET
 
 
 func is_placing() -> bool:
@@ -227,6 +270,8 @@ func demolish_building(building: Building) -> void:
 	for resident in building.residents.duplicate():
 		resident.unassign_home()
 	remove_child(building)
+	if _hovered == building:
+		_hovered = null
 	if _highlight == building:
 		_highlight = null
 	_world.set_occupied(building.def.get_cells(building.origin), false)
@@ -353,8 +398,11 @@ func add_construction_site(def: BuildingDef, origin: Vector2i, progress: float, 
 
 func clear_buildings() -> void:
 	for child in get_children():
-		remove_child(child)
-		child.free()
+		if child is Structure:
+			remove_child(child)
+			child.free()
+	_hovered = null
+	_highlight = null
 	_world.clear_occupancy()
 
 
@@ -493,9 +541,22 @@ func _draw_overlay() -> void:
 	var def := selected_def()
 	var color := VALID_COLOR if get_placement_error(def, _hover) == "" else INVALID_COLOR
 	var top_left := to_local(_world.get_cell_rect(_hover).position)
-	_overlay.draw_rect(Rect2(top_left, Vector2(def.footprint) * _world.get_tile_size()), color)
+	var footprint_size := Vector2(def.footprint) * _world.get_tile_size()
+	_overlay.draw_rect(Rect2(top_left, footprint_size), color)
+	_draw_preview_sprite(def, top_left + Vector2(footprint_size.x * 0.5, footprint_size.y), get_placement_error(def, _hover) == "")
 	if def.job:
 		_draw_radius(def, _hover)
+
+
+func _draw_preview_sprite(def: BuildingDef, bottom_centre: Vector2, valid: bool) -> void:
+	var tint := PREVIEW_VALID if valid else PREVIEW_INVALID
+	if def.is_field():
+		_overlay.draw_texture(BuildingArt.fence_texture(def.footprint.x), bottom_centre + BuildingArt.fence_offset(def.footprint.x), tint)
+		return
+	var view := _world.get_node_or_null("TerrainView") as TerrainView
+	var winter := view != null and view.get_season() == Structure.WINTER
+	var tex := BuildingArt.texture(def, winter)
+	_overlay.draw_texture(tex, bottom_centre + BuildingArt.sprite_offset(tex), tint)
 
 
 func _draw_road_preview() -> void:

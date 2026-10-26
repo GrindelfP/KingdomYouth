@@ -304,7 +304,7 @@ static func _snowy(tile: RefCounted, col: int) -> RefCounted:
 		for i in 32:
 			var n := Canvas.value_noise(i / 5.0, j / 5.0, 500 + col % 2)
 			var furrow := col >= 2 and col <= 12 and ((j + 32) % 8) in [4, 5]
-			if n > (0.5 if furrow else 0.14) - (0.1 if col in [0, 1, 13, 14] else 0.0):
+			if n > (0.34 if furrow else 0.12) - (0.1 if col in [0, 1, 13, 14] else 0.0):
 				c.px(i, j, S[P.qidx(0.7 + (Canvas.hash01(i, j, 5) - 0.5) * 0.4 - n * 0.1, 4, i, j)])
 	return c
 

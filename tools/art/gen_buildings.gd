@@ -682,7 +682,7 @@ static func _stockpile(winter: bool) -> RefCounted:
 	if winter:
 		for j in range(y0, by - 1):
 			for i in range(x0, x1):
-				if Canvas.value_noise(i / 7.0, j / 7.0, 12) > 0.34:
+				if Canvas.value_noise(i / 7.0, j / 7.0, 12) > 0.2:
 					c.px(i, j, Palette.SNOW[P.qidx(0.62 + (Canvas.hash01(i, j, 13) - 0.5) * 0.3, 4, i, j)])
 	var fence := Canvas.create(c.width, c.height, 113)
 	var gate_l := 52
