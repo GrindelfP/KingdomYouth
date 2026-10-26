@@ -4,10 +4,10 @@ extends CanvasLayer
 const TOAST_SECONDS := 6.0
 const MAX_TOASTS := 5
 const SEASON_MESSAGES := [
-	"Spring has come. Farms are productive again.",
-	"Summer. Farms are at their best.",
-	"Autumn. Stock up before winter.",
-	"Winter. Farms rest and unheated settlers grow cold.",
+	"Spring has come. Fields can be plowed and sown.",
+	"Summer. Crops are growing.",
+	"Autumn. Bring in the harvest and stock up before winter.",
+	"Winter. Frost kills standing crops; keep houses supplied with firewood.",
 ]
 const SPEED_LABELS := ["||", ">", ">>", ">>>"]
 const BAR_GOODS: Array[StringName] = [&"logs", &"stone", &"iron", &"firewood", &"tools"]
@@ -75,10 +75,6 @@ func _ready() -> void:
 	root.add_child(_toasts)
 
 	var menu := BuildingMenu.new()
-	menu.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	menu.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	menu.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	menu.offset_bottom = -12
 	root.add_child(menu)
 	menu.setup(_build)
 

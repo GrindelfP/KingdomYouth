@@ -1,8 +1,12 @@
 class_name BuildingMenu
-extends PanelContainer
+extends Control
 
 const THUMB_DIR := "res://assets/art/ui/thumb_%s.png"
 const BUTTON_SIZE := Vector2(88, 66)
+const TAB_WIDTH := 84.0
+const TAB_HEIGHT := 26.0
+const BAR_MARGIN := 8.0
+const POPUP_LIFT := 52.0
 const GROUPS := [
 	["Roads", [], 1],
 	["Storage", [&"stockpile", &"storage_barn"], 1],
@@ -15,33 +19,106 @@ const GROUPS := [
 
 var _build: BuildController
 var _entries: Array[Dictionary] = []
+var _tabs: Array[Button] = []
+var _pages: Array[HBoxContainer] = []
+var _bar: PanelContainer
+var _popup: PanelContainer
+var _open_index := -1
+var _last_index := 2
 
 
 func setup(build: BuildController) -> void:
 	_build = build
-	var column := VBoxContainer.new()
-	add_child(column)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	column.add_child(row)
-	for group in GROUPS:
-		if row.get_child_count() > 0:
-			var divider := VSeparator.new()
-			row.add_child(divider)
-		var section := VBoxContainer.new()
-		row.add_child(section)
-		var header := Label.new()
-		header.text = group[0]
-		header.theme_type_variation = &"SectionLabel"
-		section.add_child(header)
-		var grid := GridContainer.new()
-		grid.columns = group[2]
-		section.add_child(grid)
-		_fill_group(grid, group)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar = PanelContainer.new()
+	_bar.theme_type_variation = &"WoodBar"
+	_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_bar.offset_bottom = -BAR_MARGIN
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 4)
+	_bar.add_child(tabs)
+	add_child(_bar)
+	_popup = PanelContainer.new()
+	_popup.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_popup.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_popup.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_popup.offset_bottom = -POPUP_LIFT
+	_popup.visible = false
+	var holder := VBoxContainer.new()
+	_popup.add_child(holder)
+	add_child(_popup)
+	for index in GROUPS.size():
+		var group: Array = GROUPS[index]
+		var tab := Button.new()
+		tab.text = group[0]
+		tab.toggle_mode = true
+		tab.focus_mode = Control.FOCUS_NONE
+		tab.theme_type_variation = &"SmallButton"
+		tab.custom_minimum_size = Vector2(TAB_WIDTH, TAB_HEIGHT)
+		tab.pressed.connect(_on_tab_pressed.bind(index))
+		tabs.add_child(tab)
+		_tabs.append(tab)
+		var page := HBoxContainer.new()
+		page.add_theme_constant_override("separation", 4)
+		page.visible = false
+		holder.add_child(page)
+		_pages.append(page)
+		_fill_group(page, group)
 	var help := Label.new()
-	help.text = "B place, Tab cycle, R resize, X demolish, Esc cancel. Hover for cost."
+	help.text = "Tab cycle, R resize, X demolish, Esc cancel. Hover for cost."
 	help.theme_type_variation = &"HintLabel"
-	column.add_child(help)
+	help.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(help)
+
+
+func is_open() -> bool:
+	return _open_index >= 0
+
+
+func open_page(index: int) -> void:
+	_open_index = index
+	_last_index = index
+	for page_index in _pages.size():
+		_pages[page_index].visible = page_index == index
+	_popup.visible = true
+	_popup.reset_size()
+	_sync_tabs()
+
+
+func close_popup() -> void:
+	_open_index = -1
+	_popup.visible = false
+	_sync_tabs()
+
+
+func _on_tab_pressed(index: int) -> void:
+	if _open_index == index:
+		close_popup()
+	else:
+		open_page(index)
+
+
+func _sync_tabs() -> void:
+	for index in _tabs.size():
+		_tabs[index].set_pressed_no_signal(index == _open_index)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("build_toggle"):
+		if _build.is_placing():
+			_build.stop_modes()
+			close_popup()
+		elif is_open():
+			close_popup()
+		else:
+			open_page(_last_index)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("cancel_build") and is_open():
+		close_popup()
+		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
@@ -57,7 +134,7 @@ func _process(_delta: float) -> void:
 		entry["button"].set_pressed_no_signal(active)
 
 
-func _fill_group(grid: GridContainer, group: Array) -> void:
+func _fill_group(grid: Container, group: Array) -> void:
 	match group[0]:
 		"Roads":
 			_add(grid, "Dirt road", "thumb_road_dirt", "Dirt road\nFree\nDrag to lay a line.", {"kind": "road", "road": WorldGrid.Road.DIRT}, _build.select_road.bind(WorldGrid.Road.DIRT))
@@ -71,7 +148,7 @@ func _fill_group(grid: GridContainer, group: Array) -> void:
 			_add(grid, def.display_name, "thumb_%s" % id, "%s\n%s" % [def.display_name, _cost_text(def.cost)], {"kind": "building", "index": index}, _build.select_building.bind(index))
 
 
-func _add(grid: GridContainer, title: String, thumb: String, tip: String, entry: Dictionary, action: Callable) -> void:
+func _add(grid: Container, title: String, thumb: String, tip: String, entry: Dictionary, action: Callable) -> void:
 	var button := Button.new()
 	button.text = title
 	button.icon = load(THUMB_DIR % thumb.trim_prefix("thumb_")) as Texture2D
@@ -84,6 +161,7 @@ func _add(grid: GridContainer, title: String, thumb: String, tip: String, entry:
 	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = tip
 	button.pressed.connect(action)
+	button.pressed.connect(close_popup)
 	grid.add_child(button)
 	entry["button"] = button
 	_entries.append(entry)

@@ -80,12 +80,7 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("build_toggle"):
-		if _placing:
-			stop_modes()
-		else:
-			start_placing()
-	elif event.is_action_pressed("build_cycle"):
+	if event.is_action_pressed("build_cycle"):
 		_selected = (_selected + 1) % building_defs.size()
 		_road = WorldGrid.Road.NONE
 	elif event.is_action_pressed("build_size") and _placing:
