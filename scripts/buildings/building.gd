@@ -41,7 +41,23 @@ func is_storage() -> bool:
 func is_output_blocked() -> bool:
 	if output == null:
 		return false
-	return output.free_space() < def.job.output_amount and ResourceStockpile.find_storages(def.job.output_id, get_center_cell()).is_empty()
+	return output.free_space() < def.job.output_total() and ResourceStockpile.find_storages(def.job.primary_output(), get_center_cell()).is_empty()
+
+
+func forest_cell_count() -> int:
+	return _world.count_terrain_in_radius("forest", get_work_center(), def.job.work_radius)
+
+
+func work_efficiency() -> float:
+	var job := def.job
+	var efficiency := 1.0
+	if job.density_cells > 0:
+		efficiency = minf(float(forest_cell_count()) / job.density_cells, 1.0)
+	if TimeManager.is_cold():
+		efficiency *= job.winter_factor
+	if job.seasonal:
+		efficiency *= TimeManager.food_multiplier()
+	return efficiency
 
 
 func is_heated() -> bool:

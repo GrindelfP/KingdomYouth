@@ -2,6 +2,7 @@ class_name Worker
 extends Node
 
 enum State { IDLE, TRAVEL, WORK, PICKUP, DELIVER, BUILD, RETURN }
+enum Action { HARVEST, PLANT, CUT }
 
 const NO_TARGET := Vector2i(-1, -1)
 const RETRY_DELAY := 3.0
@@ -16,6 +17,7 @@ var _settler: Settler
 var _hauler: Hauler
 var _state := State.IDLE
 var _target := NO_TARGET
+var _action := Action.HARVEST
 var _work_left := 0.0
 var _retry_left := 0.0
 var _paused := false
@@ -133,9 +135,7 @@ func _plan_job() -> bool:
 		return false
 	var job := building.job_def()
 	var target := NO_TARGET
-	var can_work := building.output.free_space() >= job.output_amount
-	if job.seasonal and TimeManager.food_multiplier() <= 0.0:
-		can_work = false
+	var can_work := building.output.free_space() >= job.output_total() and building.work_efficiency() > 0.0
 	if can_work:
 		target = _find_target()
 	var stored := building.output.total()
@@ -245,14 +245,48 @@ func _manhattan(a: Vector2i, b: Vector2i) -> int:
 
 func _find_target() -> Vector2i:
 	var job := building.job_def()
+	match job.target_mode:
+		JobDef.TargetMode.FOREST_CELL:
+			_action = Action.HARVEST
+			var forest: Array[Vector2i] = []
+			for cell in _settler.world.get_cells_in_radius(building.get_work_center(), job.work_radius):
+				if _settler.world.get_terrain_name(cell) == "forest":
+					forest.append(cell)
+			return _first_reachable(forest)
+		JobDef.TargetMode.FORESTER:
+			return _find_forester_target(job)
+	_action = Action.HARVEST
+	for cell in building.get_access_cells():
+		if _hauler.is_reachable(cell):
+			return cell
+	return NO_TARGET
+
+
+func _find_forester_target(job: JobDef) -> Vector2i:
+	var world := _settler.world
+	var forest := 0
+	var mature: Array[Vector2i] = []
+	var plantable: Array[Vector2i] = []
+	for cell in world.get_cells_in_radius(building.get_work_center(), job.work_radius):
+		var stage := world.get_tree_stage(cell)
+		if stage != WorldGrid.NO_TREE:
+			forest += 1
+			if stage == WorldGrid.STAGE_MATURE:
+				mature.append(cell)
+		elif world.can_plant(cell):
+			plantable.append(cell)
+	var density := float(forest) / maxf(forest + plantable.size(), 1.0)
+	if density < job.forest_density and not plantable.is_empty():
+		_action = Action.PLANT
+		return _first_reachable(plantable)
+	_action = Action.CUT
+	return _first_reachable(mature)
+
+
+func _first_reachable(cells: Array[Vector2i]) -> Vector2i:
 	var from := _settler.get_grid_pos()
-	if job.target_terrain.is_empty():
-		for cell in building.get_access_cells():
-			if _hauler.is_reachable(cell):
-				return cell
-		return NO_TARGET
-	var candidates := _settler.world.get_terrain_cells(job.target_terrain, building.get_center_cell())
-	for cell in candidates.slice(0, MAX_TARGET_CANDIDATES):
+	cells.shuffle()
+	for cell in cells.slice(0, MAX_TARGET_CANDIDATES):
 		if not _settler.pathfinder.find_path(from, cell).is_empty():
 			return cell
 	return NO_TARGET
@@ -368,16 +402,25 @@ func _on_path_failed(grid_pos: Vector2i) -> void:
 
 func _work_duration() -> float:
 	var job := building.job_def()
-	if not job.seasonal:
-		return job.work_time
-	return job.work_time / TimeManager.food_multiplier()
+	if _action == Action.PLANT:
+		return job.plant_time
+	return job.work_time / maxf(building.work_efficiency(), 0.1)
 
 
 func _finish_work() -> void:
 	var job := building.job_def()
+	var world := _settler.world
 	_state = State.IDLE
-	if not job.target_terrain.is_empty():
-		if _settler.world.get_terrain_name(_target) != job.target_terrain:
+	match _action:
+		Action.PLANT:
+			world.plant_sapling(_target)
 			return
-		_settler.world.deplete_forest(_target)
-	building.output.add(job.output_id, job.output_amount)
+		Action.CUT:
+			if not world.cut_tree(_target):
+				return
+		Action.HARVEST:
+			if job.target_mode == JobDef.TargetMode.FOREST_CELL and world.get_terrain_name(_target) != "forest":
+				return
+	for entry in job.outputs:
+		if randf() <= float(entry["chance"]):
+			building.output.add(StringName(entry["id"]), int(entry["amount"]))

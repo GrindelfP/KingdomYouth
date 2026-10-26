@@ -7,7 +7,9 @@ script = ExtResource("1_job")
 job_name = "Farmer"
 slots = 3
 work_time = 6.0
-output_id = &"wheat"
-output_amount = 3
-target_terrain = ""
+outputs = Array[Dictionary]([{
+"amount": 3,
+"chance": 1.0,
+"id": &"wheat"
+}])
 seasonal = true

@@ -7,11 +7,19 @@ signal construction_cancelled(def: BuildingDef)
 
 const VALID_COLOR := Color(0.3, 0.9, 0.3, 0.4)
 const INVALID_COLOR := Color(0.9, 0.2, 0.2, 0.4)
+const RADIUS_FILL := Color(1.0, 1.0, 1.0, 0.08)
+const RADIUS_LINE := Color(1.0, 1.0, 1.0, 0.5)
+const RADIUS_SEGMENTS := 64
 const START_SEARCH_RADIUS := 20
 const START_MARGIN := 1
 
 var building_defs: Array[BuildingDef] = [
-	load("res://resources/buildings/woodcutters_lodge.tres"),
+	load("res://resources/buildings/foresters_lodge.tres"),
+	load("res://resources/buildings/gatherers_hut.tres"),
+	load("res://resources/buildings/hunting_cabin.tres"),
+	load("res://resources/buildings/fishing_dock.tres"),
+	load("res://resources/buildings/quarry.tres"),
+	load("res://resources/buildings/mine.tres"),
 	load("res://resources/buildings/farm.tres"),
 	load("res://resources/buildings/stockpile.tres"),
 	load("res://resources/buildings/storage_barn.tres"),
@@ -21,6 +29,7 @@ var _world: WorldGrid
 var _placing := false
 var _selected := 0
 var _hover := Vector2i.ZERO
+var _highlight: Structure
 
 
 func _ready() -> void:
@@ -45,6 +54,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_hover = _world.world_to_grid(get_global_mouse_position())
 		try_place(selected_def(), _hover)
 		get_viewport().set_input_as_handled()
+
+
+func set_highlight(structure: Structure) -> void:
+	_highlight = structure
 
 
 func is_placing() -> bool:
@@ -74,7 +87,33 @@ func get_placement_error(def: BuildingDef, origin: Vector2i) -> String:
 			return "tile is occupied"
 		if not _world.is_buildable(cell):
 			return "terrain is not buildable"
+	return _get_rule_error(def, origin)
+
+
+func _get_rule_error(def: BuildingDef, origin: Vector2i) -> String:
+	if def.job == null:
+		return ""
+	var job := def.job
+	match job.placement_rule:
+		JobDef.PlacementRule.NEAR_WATER:
+			if not _touches_terrain(def, origin, "water"):
+				return "must be next to water"
+		JobDef.PlacementRule.NEAR_ROCK:
+			var center := Vector2(origin) + Vector2(def.footprint - Vector2i.ONE) / 2.0
+			var found := _world.count_terrain_in_radius("rock", center, job.rule_radius)
+			if found < job.rule_min_cells:
+				return "needs %d rock tiles within %d tiles (found %d)" % [job.rule_min_cells, job.rule_radius, found]
 	return ""
+
+
+func _touches_terrain(def: BuildingDef, origin: Vector2i, terrain_name: String) -> bool:
+	var cells := def.get_cells(origin)
+	for cell in cells:
+		for offset in Structure.ACCESS_OFFSETS:
+			var neighbour: Vector2i = cell + offset
+			if not cells.has(neighbour) and _world.get_terrain_name(neighbour) == terrain_name:
+				return true
+	return false
 
 
 func try_place(def: BuildingDef, origin: Vector2i) -> bool:
@@ -190,6 +229,8 @@ func from_save_data(entries: Array) -> void:
 	clear_buildings()
 	for entry in entries:
 		var def := _def_by_id(entry["id"])
+		if def == null:
+			continue
 		var origin := WorldGrid.cell_from_json(entry["origin"])
 		if entry["kind"] == "site":
 			add_construction_site(def, origin, float(entry["progress"]), entry["delivered"])
@@ -257,8 +298,23 @@ func _update_hint() -> void:
 
 func _draw() -> void:
 	if not _placing:
+		if _highlight != null and is_instance_valid(_highlight) and _highlight.def.job:
+			_draw_radius(_highlight.def, _highlight.origin)
 		return
 	var def := selected_def()
 	var color := VALID_COLOR if get_placement_error(def, _hover) == "" else INVALID_COLOR
 	var top_left := to_local(_world.get_cell_rect(_hover).position)
 	draw_rect(Rect2(top_left, Vector2(def.footprint) * _world.get_tile_size()), color)
+	if def.job:
+		_draw_radius(def, _hover)
+
+
+func _draw_radius(def: BuildingDef, origin: Vector2i) -> void:
+	if not def.job.has_work_area():
+		return
+	var tile := _world.get_tile_size()
+	var center_cell := Vector2(origin) + Vector2(def.footprint - Vector2i.ONE) / 2.0
+	var center := to_local(_world.grid_to_world(Vector2i.ZERO) + center_cell * tile)
+	var radius := (def.job.work_radius + 0.5) * tile.x
+	draw_circle(center, radius, RADIUS_FILL)
+	draw_arc(center, radius, 0.0, TAU, RADIUS_SEGMENTS, RADIUS_LINE, 2.0)

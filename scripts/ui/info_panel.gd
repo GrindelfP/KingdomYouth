@@ -89,6 +89,7 @@ func _build_building_view(building: Building) -> void:
 			func() -> void: _labor.set_desired_workers(building, building.desired_workers + 1))
 		for worker_settler in building.workers:
 			_add_line("  Settler %d" % worker_settler.display_id)
+		_add_work_area_lines(building)
 		_add_inventory("Output", building.output)
 		if building.is_output_blocked():
 			_add_line("Storage full: output cannot be hauled, work is stalled.")
@@ -98,6 +99,23 @@ func _build_building_view(building: Building) -> void:
 		_add_line("Residents %d / %d" % [building.residents.size(), building.def.housing_capacity])
 		_add_line("Heating: " + ("on" if building.is_heated() else "off"))
 	_add_button("Close", _jobs.clear_selection)
+
+
+func _add_work_area_lines(building: Building) -> void:
+	var job := building.def.job
+	var world := building.world()
+	var center := building.get_work_center()
+	match job.target_mode:
+		JobDef.TargetMode.FOREST_CELL:
+			_add_line("Forest tiles in radius: %d" % building.forest_cell_count())
+		JobDef.TargetMode.FORESTER:
+			_add_line("Trees in radius: %d (mature %d)" % [
+				world.count_trees_in_radius(center, job.work_radius),
+				world.count_trees_in_radius(center, job.work_radius, WorldGrid.STAGE_MATURE)])
+	if job.placement_rule == JobDef.PlacementRule.NEAR_ROCK:
+		_add_line("Rock tiles nearby: %d" % world.count_terrain_in_radius("rock", center, job.rule_radius))
+	if job.density_cells > 0 or (TimeManager.is_cold() and job.winter_factor < 1.0):
+		_add_line("Work rate: %d%%" % roundi(building.work_efficiency() * 100.0))
 
 
 func _add_inventory(title: String, inventory: Inventory) -> void:

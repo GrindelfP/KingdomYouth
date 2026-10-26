@@ -17,6 +17,10 @@ func bind_to_grid(world: WorldGrid, building_def: BuildingDef, grid_origin: Vect
 	_size = Vector2(def.footprint) * world.get_tile_size()
 
 
+func world() -> WorldGrid:
+	return _world
+
+
 func is_alive() -> bool:
 	return is_instance_valid(self) and not is_queued_for_deletion()
 
@@ -27,6 +31,10 @@ func occupies(grid_pos: Vector2i) -> bool:
 
 func get_center_cell() -> Vector2i:
 	return origin + (def.footprint - Vector2i.ONE) / 2
+
+
+func get_work_center() -> Vector2:
+	return Vector2(origin) + Vector2(def.footprint - Vector2i.ONE) / 2.0
 
 
 func get_access_cells() -> Array[Vector2i]:

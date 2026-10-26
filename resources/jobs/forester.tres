@@ -4,9 +4,15 @@
 
 [resource]
 script = ExtResource("1_job")
-job_name = "Woodcutter"
+job_name = "Forester"
 slots = 2
-work_time = 4.0
-output_id = &"logs"
-output_amount = 2
-target_terrain = "forest"
+work_time = 6.0
+outputs = Array[Dictionary]([{
+"amount": 3,
+"chance": 1.0,
+"id": &"logs"
+}])
+target_mode = 2
+work_radius = 8.0
+plant_time = 3.0
+forest_density = 0.6

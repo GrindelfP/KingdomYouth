@@ -17,6 +17,7 @@ func _ready() -> void:
 	_world = get_parent()
 	_buildings = get_parent().get_node("Buildings")
 	_settlers = get_parent().get_node("Settlers")
+	selection_changed.connect(_sync_highlight)
 
 
 func get_selected_settler() -> Settler:
@@ -80,6 +81,13 @@ func _click(world_pos: Vector2) -> void:
 		selection_changed.emit()
 		return
 	clear_selection()
+
+
+func _sync_highlight() -> void:
+	var structure: Structure = get_selected_building()
+	if structure == null:
+		structure = get_selected_site()
+	_buildings.set_highlight(structure)
 
 
 func _settler_at(world_pos: Vector2) -> Settler:

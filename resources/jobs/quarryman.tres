@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="JobDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/buildings/job_def.gd" id="1_job"]
+
+[resource]
+script = ExtResource("1_job")
+job_name = "Quarryman"
+slots = 3
+work_time = 8.0
+outputs = Array[Dictionary]([{
+"amount": 3,
+"chance": 1.0,
+"id": &"stone"
+}])
+work_radius = 3.0
+placement_rule = 2
+rule_radius = 3
+rule_min_cells = 4

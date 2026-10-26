@@ -1,15 +1,15 @@
 [gd_resource type="Resource" script_class="BuildingDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/buildings/building_def.gd" id="1_def"]
-[ext_resource type="Resource" path="res://resources/jobs/woodcutter.tres" id="2_job"]
+[ext_resource type="Resource" path="res://resources/jobs/hunter.tres" id="2_job"]
 
 [resource]
 script = ExtResource("1_def")
-id = &"woodcutters_lodge"
-display_name = "Woodcutter's Lodge"
+id = &"hunting_cabin"
+display_name = "Hunting Cabin"
 footprint = Vector2i(2, 2)
 cost = {
-&"logs": 10
+&"logs": 25
 }
-build_time = 15.0
+build_time = 18.0
 job = ExtResource("2_job")
