@@ -1,6 +1,6 @@
 # 0014 — Seasons-only calendar & game speed
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M6 — Seasons & Time
 - **Depends on:** 0011
 
@@ -26,12 +26,21 @@ Owner decision (2026-10-26): no day/night cycle, only seasons cycling. Banished 
 - Weather events. Seasonal visuals (snow, foliage) — 0024.
 
 ## Acceptance criteria
-- [ ] No day/night tint exists; the scene runs with no references to removed code.
-- [ ] Calendar advances month by month; seasons change every 3 months; year increments after Late Winter.
-- [ ] Space pauses/unpauses; 1/2/3 select speeds; HUD buttons do the same and show the active speed.
-- [ ] Camera works while paused.
-- [ ] Save/load round-trips month and elapsed time.
-- [ ] Headless run is free of script errors.
+- [x] No day/night tint exists; the scene runs with no references to removed code.
+- [x] Calendar advances month by month; seasons change every 3 months; year increments after Late Winter.
+- [x] Space pauses/unpauses; 1/2/3 select speeds; HUD buttons do the same and show the active speed.
+- [x] Camera works while paused.
+- [x] Save/load round-trips month and elapsed time.
+- [x] Headless run is free of script errors.
 
 ## Open questions
 - None.
+
+## Implementation notes
+- `TimeManager` keeps `month` (absolute, 0-based) and `_elapsed`; the year is `month / 12 + 1`, so the year signal fires when the month wraps to Early Spring.
+- Speed uses `Engine.time_scale` over `SPEEDS := [0.0, 1.0, 2.0, 5.0]`. `set_speed()` always emits `speed_changed` so the HUD toggle buttons resync even when the active button is clicked again. `toggle_pause()` resumes the last non-zero speed. `reset()` (New game) returns to 1x.
+- Key bindings: `toggle_pause` Space, `speed_1` 1, `speed_2` 2, `speed_3` 3. No conflicts with existing bindings (Tab, B, Esc, F5, F9, WASD, arrows, mouse). Time keys are read in `Hud._input` rather than `_unhandled_input` so a focused info panel button cannot swallow Space.
+- Camera measures real time with `Time.get_ticks_usec()`, so pan and zoom keep working at time_scale 0.
+- Save format is `{month, elapsed}` with `SAVE_VERSION` 2. Version 1 saves fail to load and show the existing "Could not load the save." toast. Speed is not saved.
+- Verified headless: project starts with no script errors, and a throwaway SceneTree test covered month/season/year boundaries, save round-trip, and pause/speed logic (18 checks passed). The key and button wiring was not exercised interactively.
+- Known caveat: toast timers use the scene tree clock, which runs scaled by `Engine.time_scale`, so toasts linger while paused.
