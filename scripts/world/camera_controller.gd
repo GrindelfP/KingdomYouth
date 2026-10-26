@@ -11,6 +11,7 @@ extends Camera2D
 var _target_zoom := 1.0
 var _dragging := false
 var _bounds: Rect2
+var _last_ticks_usec := 0
 
 
 func _ready() -> void:
@@ -18,13 +19,15 @@ func _ready() -> void:
 	zoom = Vector2.ONE * _target_zoom
 	_bounds = world_grid.get_world_bounds()
 	position = _bounds.get_center()
+	_last_ticks_usec = Time.get_ticks_usec()
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
+	var real_delta := _measure_real_delta()
 	var direction := Input.get_vector("camera_pan_left", "camera_pan_right", "camera_pan_up", "camera_pan_down")
-	position += direction * pan_speed * delta / zoom.x
+	position += direction * pan_speed * real_delta / zoom.x
 
-	var blend := 1.0 - exp(-zoom_smoothing * delta)
+	var blend := 1.0 - exp(-zoom_smoothing * real_delta)
 	zoom = Vector2.ONE * lerpf(zoom.x, _target_zoom, blend)
 	_clamp_to_bounds()
 
@@ -41,6 +44,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _dragging:
 		position -= event.relative / zoom.x
 		_clamp_to_bounds()
+
+
+func _measure_real_delta() -> float:
+	var now := Time.get_ticks_usec()
+	var seconds := (now - _last_ticks_usec) / 1000000.0
+	_last_ticks_usec = now
+	return seconds
 
 
 func get_hovered_grid_pos() -> Vector2i:
