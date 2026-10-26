@@ -10,10 +10,12 @@ Balance growth against food, warmth, and shelter as the seasons change.
 
 - Top-down 2D tile-grid world with forests, lakes, and rock
 - Settlers with needs (hunger, rest, warmth, health) who act on their own
-- Buildings: house, forester's lodge, gatherer's hut, hunting cabin, fishing dock, quarry, mine, farm, stockpile, storage barn
+- Buildings: house, forester's lodge, gatherer's hut, hunting cabin, fishing dock, quarry, mine, farm, woodcutter, blacksmith, stockpile, storage barn
 - Physical storage: goods are hauled by settlers to storage with limited capacity
 - Banished-style labor: laborers haul materials, builders construct, and you set profession counts
-- Seasons, a month/year calendar, and winter heating
+- Seasons, a month/year calendar, and winter heating from each house's own firewood
+- Households: houses keep their own food and firewood, and settlers fetch and eat from them
+- Crafting: woodcutter (logs to firewood) and blacksmith (iron and logs to tools); tools wear out and speed up work
 - Births, deaths, and a population that depends on housing and food
 - HUD with resource bar, build menu, info panel, and toasts
 - Save and load to a JSON file

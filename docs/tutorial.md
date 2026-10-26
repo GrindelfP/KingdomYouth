@@ -36,7 +36,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 
 | Building | Cost | Size | What it does |
 | --- | --- | --- | --- |
-| **House** | 15 logs | 2x2 | Holds 4 settlers. Settlers with a home rest there, stay warm in winter, and can have children. |
+| **House** | 15 logs | 2x2 | Holds 4 settlers. Settlers with a home rest there, eat there, stay warm in winter, and can have children. Each house keeps its own food and firewood. |
 | **Forester's Lodge** | 20 logs | 2x2 | 2 foresters. Work radius 8 tiles. Cuts mature trees (3 logs each) and plants saplings on free grass so the forest stays at about 60% density. |
 | **Gatherer's Hut** | 15 logs | 2x2 | 2 gatherers. Radius 8. Collects berries and some mushrooms in forest tiles; faster the more forest is in range (full speed at 40 forest tiles). Stops in winter. |
 | **Hunting Cabin** | 25 logs | 2x2 | 2 hunters. Radius 10. Venison from forest tiles in range (full speed at 60 forest tiles); half speed in winter. |
@@ -44,6 +44,8 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | **Quarry** | 30 logs | 3x3 | 3 quarrymen. Needs at least 4 rock tiles within 3 tiles. Produces stone. |
 | **Mine** | 40 logs, 20 stone | 3x3 | 3 miners. Needs at least 4 rock tiles within 3 tiles. Produces iron. |
 | **Farm** | 15 logs | 3x3 | Has 3 farmer slots. Each harvest gives 3 wheat. Farms work faster in summer and stop in winter. |
+| **Woodcutter** | 20 logs | 2x2 | 1 woodcutter. Turns 1 log into 3 firewood. Fetches logs from storage in batches. |
+| **Blacksmith** | 30 logs, 10 stone | 2x2 | 1 blacksmith. Turns 1 iron and 1 log into 1 tool. |
 | **Stockpile** | free | 4x4 | Stores 400 units of materials, fuel, and tools. |
 | **Storage Barn** | 40 logs, 20 stone | 3x3 | Stores 600 units of food, tools, and fuel. |
 
@@ -81,18 +83,20 @@ Foresters cut mature trees and plant saplings, then goods go to the output buffe
 
 Click **Farm** and place it on a 3x3 patch of grass. Up to 3 laborers become farmers once it is built, as in step 4. Food rises as farmers harvest and carry it to storage.
 
-Settlers eat from the shared food stock by themselves when they get hungry, taking from the most plentiful kind first. If food runs out, they starve and their health falls.
+Settlers eat from their house when they are hungry (60 or more), taking the most plentiful kind first. A hungry settler who is away walks home to eat. Homeless settlers eat directly at a storage building. If their house has no food, they starve and their health falls.
+
+Each house holds up to 30 food and 20 firewood. When food or firewood falls below half, a resident fetches up to 10 from the nearest storage between tasks, one kind per trip. A house far from storage takes longer to restock, so keep houses and storage close. A house that holds 3 or more kinds of food gives its residents a small health bonus; a house with only 1 kind gives a small penalty.
 
 ### 6. Keep an eye on your settlers
 
 Select a settler to see its needs:
 
-- **Hunger** rises over time. Settlers eat when it passes 60. At 85 they stop working until they have eaten.
+- **Hunger** rises over time. Settlers eat from their house when it passes 60 and they are home. At 85 they drop their work and go eat.
 - **Rest** drains while they are awake. At 25 they walk home to rest until they reach 95. A settler without a home cannot recover rest.
 - **Warmth** only matters in winter (see below).
 - **Health** falls when settlers starve, get cold, or have no home. It recovers when they are fed and housed. At 0 a settler dies.
 
-Births happen when a house has at least 2 settlers, room for another, and at least 10 food in the stockpile. A newborn appears about every 45 seconds per house.
+Births happen when a house has at least 2 settlers, room for another, and at least 10 food in the house. A newborn appears about every 45 seconds per house.
 
 ### 7. Prepare for winter
 
@@ -101,13 +105,17 @@ The year has 12 months grouped into four seasons: spring, summer, autumn, and wi
 - **Summer:** farms run at 1.5 times their normal speed. Stock up.
 - **Winter:** farms stop completely. Unheated settlers lose warmth, and then health.
 
-To keep settlers warm in winter, each house with residents burns 1 firewood every 20 seconds. Nothing produces firewood yet, so the starting stock is all you have. The toast for "Winter" is a reminder.
+To keep settlers warm in winter, each house with residents burns 1 firewood every 20 seconds from its own stock. Settlers outside lose warmth; below 40 they go home to warm up (interrupting work) until it is back above 90, as long as the house is heated. Without firewood, warmth drops to 0 and health falls. Build a **Woodcutter** before winter: it turns logs into firewood, which laborers carry to storage and residents carry home. The toast for "Winter" is a reminder.
+
+### 8. Equip your workers
+
+Every settler with a job (and every builder) needs a tool. A tool wears out after about one year of continuous work. Without one, work takes twice as long. A settler without a tool fetches one from storage between tasks. A **Blacksmith** makes tools from iron and logs, so mine some iron. The info panel shows the settler's tool state, and a house's panel shows its food, firewood, and food kinds.
 
 The top bar shows the current month and year, for example "Mid Summer, Year 2".
 
-### 8. Save and reload
+### 9. Save and reload
 
-Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers and their professions, buildings, construction deliveries and progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
+Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers, their tools, professions, buildings, household stocks, construction deliveries and progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
 
 ## Tips
 
@@ -115,13 +123,14 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 - Build a house before your first birth is possible, since births need room.
 - Place the farm and workplaces close to houses to shorten settler trips.
 - If all storage is full, workplaces fill up and stop working. Build another stockpile or barn.
+- Keep a woodcutter running and a blacksmith supplied with iron before the first winter.
 - Watch the firewood count in winter, and the log count when you build.
-- Use the info panel to check why a settler is idle. The task line shows **paused** when the settler is eating or resting.
+- Use the info panel to check why a settler is idle. The task line shows **paused** when the settler is resting or warming up at home.
 - Trees grow one stage (sapling, young, mature) every 2 months, except in winter. Only mature trees can be cut. A cut tile becomes grass, and foresters replant it, so keep a lodge staffed to keep logs coming.
 
 ## Known limits (for now)
 
 - The balance (costs, rates, timings) is a first draft and will change.
 - There is no main menu or settings screen.
-- Tools, cabbage, and wheat processing are not produced yet. Stone and iron are produced but not used except for the barn and mine.
+- Cabbage and wheat processing are not produced yet. Stone is used only for the barn, mine, and blacksmith.
 - Save files from older versions of the game may not load after changes.
