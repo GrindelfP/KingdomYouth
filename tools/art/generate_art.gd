@@ -2,6 +2,8 @@ extends SceneTree
 
 const MODULES: Array[String] = [
 	"res://tools/art/gen_icons.gd",
+	"res://tools/art/gen_terrain.gd",
+	"res://tools/art/gen_nature.gd",
 ]
 
 

@@ -44,10 +44,6 @@ func _ready() -> void:
 	TimeManager.month_changed.connect(_on_month_changed)
 	_generate_map()
 	_reset_trees()
-	var road_layer := RoadLayer.new()
-	add_child(road_layer)
-	move_child(road_layer, terrain.get_index() + 1)
-	road_layer.setup(self)
 	map_generated.emit()
 
 

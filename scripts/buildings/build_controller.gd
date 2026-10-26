@@ -41,16 +41,21 @@ var _road := WorldGrid.Road.NONE
 var _demolishing := false
 var _dragging := false
 var _drag_from := Vector2i.ZERO
+var _overlay: Node2D
 
 
 func _ready() -> void:
 	_world = get_parent()
+	_overlay = Node2D.new()
+	_overlay.z_index = 100
+	_overlay.draw.connect(_draw_overlay)
+	add_child(_overlay)
 
 
 func _process(_delta: float) -> void:
 	if _placing:
 		_hover = _world.world_to_grid(get_global_mouse_position())
-	queue_redraw()
+	_overlay.queue_redraw()
 	_update_hint()
 
 
@@ -477,7 +482,7 @@ func _update_hint() -> void:
 	hint_changed.emit("Build %s: %s" % [def.display_name, error if error != "" else "click to place, Esc to cancel"])
 
 
-func _draw() -> void:
+func _draw_overlay() -> void:
 	if not _placing:
 		if _highlight != null and is_instance_valid(_highlight) and _highlight.def.job:
 			_draw_radius(_highlight.def, _highlight.origin)
@@ -488,7 +493,7 @@ func _draw() -> void:
 	var def := selected_def()
 	var color := VALID_COLOR if get_placement_error(def, _hover) == "" else INVALID_COLOR
 	var top_left := to_local(_world.get_cell_rect(_hover).position)
-	draw_rect(Rect2(top_left, Vector2(def.footprint) * _world.get_tile_size()), color)
+	_overlay.draw_rect(Rect2(top_left, Vector2(def.footprint) * _world.get_tile_size()), color)
 	if def.job:
 		_draw_radius(def, _hover)
 
@@ -497,7 +502,7 @@ func _draw_road_preview() -> void:
 	var cells := road_line_cells(_drag_from, _hover) if _dragging else [_hover]
 	for cell in cells:
 		var color := VALID_COLOR if _world.can_place_road(cell, _road) else INVALID_COLOR
-		draw_rect(Rect2(to_local(_world.get_cell_rect(cell).position), _world.get_tile_size()), color)
+		_overlay.draw_rect(Rect2(to_local(_world.get_cell_rect(cell).position), _world.get_tile_size()), color)
 
 
 func _draw_radius(def: BuildingDef, origin: Vector2i) -> void:
@@ -507,5 +512,5 @@ func _draw_radius(def: BuildingDef, origin: Vector2i) -> void:
 	var center_cell := Vector2(origin) + Vector2(def.footprint - Vector2i.ONE) / 2.0
 	var center := to_local(_world.grid_to_world(Vector2i.ZERO) + center_cell * tile)
 	var radius := (def.job.work_radius + 0.5) * tile.x
-	draw_circle(center, radius, RADIUS_FILL)
-	draw_arc(center, radius, 0.0, TAU, RADIUS_SEGMENTS, RADIUS_LINE, 2.0)
+	_overlay.draw_circle(center, radius, RADIUS_FILL)
+	_overlay.draw_arc(center, radius, 0.0, TAU, RADIUS_SEGMENTS, RADIUS_LINE, 2.0)
