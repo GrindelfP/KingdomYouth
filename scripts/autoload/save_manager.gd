@@ -5,6 +5,7 @@ const SAVE_VERSION := 10
 
 var pending_load := false
 var save_path := SAVE_PATH
+var last_error := ""
 
 
 func has_save() -> bool:
@@ -30,12 +31,26 @@ func save_game() -> bool:
 
 
 func load_game() -> bool:
+	last_error = ""
 	var world := _world()
 	if world == null or not has_save():
+		last_error = "No saved game yet."
 		return false
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(save_path))
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != SAVE_VERSION:
+	if typeof(parsed) != TYPE_DICTIONARY:
+		last_error = "The save file is damaged and cannot be loaded."
 		return false
+	var version := int(parsed.get("version", 0))
+	if version < SAVE_VERSION:
+		last_error = "This save is from an older version of the game (v%d, current v%d) and cannot be loaded." % [version, SAVE_VERSION]
+		return false
+	if version > SAVE_VERSION:
+		last_error = "This save was made by a newer version of the game (v%d) and cannot be loaded." % version
+		return false
+	for key in ["time", "terrain", "buildings", "settlers"]:
+		if not parsed.has(key):
+			last_error = "The save file is damaged and cannot be loaded."
+			return false
 	var buildings: BuildController = world.get_node("Buildings")
 	var settlers: SettlerManager = world.get_node("Settlers")
 	TimeManager.from_save_data(parsed["time"])

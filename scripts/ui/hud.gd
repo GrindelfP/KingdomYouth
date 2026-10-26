@@ -243,7 +243,10 @@ func _load_game() -> void:
 	if not SaveManager.has_save():
 		add_toast("No saved game yet.")
 		return
-	add_toast("Game loaded." if SaveManager.load_game() else "Could not load the save.")
+	if SaveManager.load_game():
+		add_toast("Game loaded.")
+	else:
+		add_toast(SaveManager.last_error if SaveManager.last_error != "" else "Could not load the save.", &"warning")
 
 
 func _make_label(light := false) -> Label:

@@ -148,8 +148,10 @@ func _spawn_starting_settlers() -> void:
 
 func clear_settlers() -> void:
 	for child in get_children():
-		remove_child(child)
-		child.free()
+		if child is Settler:
+			remove_child(child)
+			child.free()
+	_hovered = null
 	_next_display_id = 1
 
 
