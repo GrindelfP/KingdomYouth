@@ -36,7 +36,8 @@ The player can actually see and control the above without reading logs.
 ## M5 — Persistence
 - 0013 — Save/load system
 
-## v0.2 — "Banished loop" (planned 2026-10-26)
+## v0.2 — "Banished loop" (planned 2026-10-26, complete)
+Status: all milestones M6–M10 are done and playable end to end; see `docs/balance.md` for the final numbers.
 Owner playtest feedback: keep going, but (A) no day/night cycle, only seasons; (B) structures must be distinguishable and textures more interesting; (C) overall graphics too simple. Everything else follows Banished's gameloop: physical goods, laborers/builders, profession counts, renewable resources, households, tools, families.
 
 ### M6 — Seasons & Time

@@ -15,11 +15,12 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 | Cancel a construction site | Right-click it, or `Delete` with it selected |
 | Open the Professions panel | `P` or the **Professions** button |
 | Clear the selection | Left-click empty ground, or `Esc` |
-| Toggle placing mode | `B` (or click a button in the build menu) |
+| Open or close the build menu | `B`, or click a category tab at the bottom of the screen |
 | Change the building you are placing | `Tab` |
+| Change the size of a crop field while placing | `R` |
 | Place a building | Left-click while in placing mode |
 | Lay a road | Pick a road in the build menu, then drag with the left mouse button and release |
-| Stop placing | `Esc` or right-click |
+| Close the build menu, or stop placing | `Esc`, `B`, or right-click |
 | Demolish a building, site, or road | `X` or the **Demolish** button, then left-click it |
 | Stop demolishing | `X` again, `Esc`, or right-click |
 | Pause / resume | `Space` or the `||` button |
@@ -57,7 +58,7 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 
 Buildings go on grass only. You cannot build on forest, water, or rock, or on top of another building or road. Buildings also block walking, so settlers path around them. Settlers standing on a spot do not stop you building there; they just walk away.
 
-The build menu is grouped into Roads, Storage, Housing, Food, Resources and Industry.
+The build menu is a slim bar of category tabs along the bottom edge: Roads, Storage, Housing, Food, Resources, Industry and Tools (demolish). Click a tab, or press `B`, to pop up that category's buildings with thumbnails; hover one to see its cost. The pop-up closes when you pick something, and `Esc` or `B` closes it too.
 
 Roads go on open grass only: not on forest (trees), water, rock, buildings, or construction sites. Drag from the first tile to the last; the road runs straight, then turns once in an L-shape. Tiles you cannot place are skipped. Stone roads need 1 stone per tile placed, and if you run short only the affordable tiles are built.
 
@@ -71,7 +72,7 @@ Pan with `WASD` and zoom with the mouse wheel. Find the forest, which is dark gr
 
 ### 2. Build a house
 
-Click **House** in the build menu at the bottom left. The hint line at the top shows what you are placing and why a spot is not valid. Move the cursor over open grass. A green box means you can place it here. A red box means you cannot, with the reason shown. Left-click to place it.
+Press `B` (or click the **Housing** tab at the bottom) and pick **House**. The hint line at the top shows what you are placing and why a spot is not valid. Move the cursor over open grass. A green box means you can place it here. A red box means you cannot, with the reason shown. Left-click to place it.
 
 Placing a building costs nothing right away. It becomes a construction site that needs materials first: laborers carry the cost from storage to the site (the site shows an orange materials bar), and once everything has arrived the builders start work (the white progress bar). A house takes 20 builder-seconds, so two builders finish it in about 10 seconds plus walking time. More builders build faster; with 0 builders nothing is built. You can place a building even when you lack the logs; the site just waits for materials.
 
@@ -81,7 +82,7 @@ When it is done, a toast appears in the top right. A homeless family moves in au
 
 ### 3. Build a Forester's Lodge near the forest
 
-Click **Forester's Lodge**, then place it on grass close to the forest. While placing, and when the building is selected, a translucent circle shows its work radius. Foresters only work inside that circle. Gatherers and hunters depend on how much forest is inside it, and the dock, quarry, and mine show a hint when their terrain rule is not met.
+Open the **Resources** tab, pick **Forester's Lodge**, then place it on grass close to the forest. While placing, and when the building is selected, a translucent circle shows its work radius. Foresters only work inside that circle. Gatherers and hunters depend on how much forest is inside it, and the dock, quarry, and mine show a hint when their terrain rule is not met.
 
 ### 4. Staff the lodge
 
@@ -93,7 +94,7 @@ Foresters cut mature trees and plant saplings, then goods go to the output buffe
 
 ### 5. Build a crop field and staff it
 
-Click a **Crop Field** size in the build menu (or press `R` while placing to cycle 4x4, 6x6 and 8x8) and place it on open grass. Up to 4 laborers become farmers once it is built, as in step 4. Settlers can walk across fields.
+Open the **Food** tab and pick a **Crop Field** size (or press `R` while placing to cycle 4x4, 6x6 and 8x8) and place it on open grass. Up to 4 laborers become farmers once it is built, as in step 4. Settlers can walk across fields.
 
 A field follows the year. In spring farmers plow and plant empty cells one by one. Crops grow through summer (cabbage ripens in late summer, wheat in early autumn). In autumn farmers harvest ripe cells, each giving 2 of the crop, which laborers and farmers carry to storage. At the start of winter every cell still in the ground is lost to frost, with a toast. Fields hold more cells than a few farmers can work, so match the size to your farmers.
 
@@ -107,7 +108,7 @@ Each house holds up to 30 food and 20 firewood. When food or firewood falls belo
 
 Select a settler to see its needs:
 
-- **Hunger** rises over time. Settlers eat from their house when it passes 60 and they are home. At 85 they drop their work and go eat.
+- **Hunger** rises over time, roughly one meal (1 food) per settler per month. Settlers eat from their house when it passes 60 and they are home. At 85 they drop their work and go eat.
 - **Rest** drains while they are awake. At 25 they walk home to rest until they reach 95. A settler without a home cannot recover rest.
 - **Warmth** only matters in winter (see below).
 - **Health** falls when settlers starve, get cold, or have no home. It recovers when they are fed and housed. At 0 a settler dies.
@@ -121,7 +122,7 @@ The year has 12 months grouped into four seasons: spring, summer, autumn, and wi
 - **Summer:** crops grow. Stock up on goods you can gather.
 - **Winter:** fields lie empty, and anything unharvested is lost. Unheated settlers lose warmth, and then health.
 
-To keep settlers warm in winter, each house with residents burns 1 firewood every 20 seconds from its own stock. Settlers outside lose warmth; below 40 they go home to warm up (interrupting work) until it is back above 90, as long as the house is heated. Without firewood, warmth drops to 0 and health falls. Build a **Woodcutter** before winter: it turns logs into firewood, which laborers carry to storage and residents carry home. The toast for "Winter" is a reminder.
+To keep settlers warm in winter, each house with residents burns 1 firewood every 10 seconds from its own stock (about 18 per winter). Settlers outside lose warmth; below 40 they go home to warm up (interrupting work) until it is back above 90, as long as the house is heated. Without firewood, warmth drops to 0 and health falls. Build a **Woodcutter** before winter: it turns logs into firewood, which laborers carry to storage and residents carry home. Without firewood, warmth drops to 0 within a minute and settlers start losing health fast; a town with no firewood loses everyone within about two winters. The toast for "Winter" is a reminder.
 
 ### 8. Equip your workers
 
@@ -132,6 +133,21 @@ The top bar shows the current month and year, for example "Mid Summer, Year 2".
 ### 9. Save and reload
 
 Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the saved state. Your settlers (with ages, families and homes), their tools, professions, buildings, household stocks, construction deliveries and progress, and time all come back. **New game** starts a fresh settlement and leaves your save file alone.
+
+## Speed and time
+
+The time bar shows the month and year. Press `Space` to pause (the camera still moves, and you can still place buildings) and `1`, `2`, `3` for normal, double, and five-times speed; the buttons next to the clock do the same. Speed is not saved.
+
+## Your first year
+
+You start with 9 settlers but only 6 adults who can work (2 of them are builders), so you cannot staff everything. A plan that works on the default map:
+
+1. Place 3 houses, a forester's lodge, a gatherer's hut, a 6x6 field and a woodcutter straight away. Placing is free; laborers carry the logs over as you have them, and logs run out fast, so queue the buildings in the order you need them.
+2. In the Professions panel (`P`) or each building's info panel, cut the staffing to what you can afford: about 1 forester, 1 gatherer, 2 farmers and 1 woodcutter, and drop builders to 1 once the town is up.
+3. Before the first winter have food coming in (field, gatherer, later a hunting cabin or fishing dock) and let the woodcutter fill the houses with firewood; pause it if firewood piles up beyond 100 or so.
+4. Add houses as logs allow, then a quarry, mine and blacksmith so tools do not run out (the 12 starting tools wear out within about a year).
+
+The balance numbers are listed in [balance.md](balance.md). A planned town reaches about 15 settlers in the first year and then grows slowly: each family fills its house, and the starting children only form new families at 16.
 
 ## Tips
 
@@ -147,7 +163,9 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 
 ## Known limits (for now)
 
-- The balance (costs, rates, timings) is a first draft and will change.
+- The balance is tuned for v0.2 (see [balance.md](balance.md)) but will keep changing.
 - There is no main menu or settings screen.
-- Cabbage and wheat processing are not produced yet. Stone is used only for the barn, mine, and blacksmith.
-- Save files from older versions of the game may not load after changes.
+- Cabbage and wheat are eaten raw; there is no mill or bakery yet. Stone is used for the barn, mine, blacksmith and stone roads.
+- Saves from older versions are rejected with a message in the toast area; there is no migration.
+- Roads refund nothing when demolished, and demolished storage contents that fit nowhere else are lost.
+- Population growth is limited by family size: a house keeps one family of up to 5.
