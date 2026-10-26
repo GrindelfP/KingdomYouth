@@ -1,0 +1,60 @@
+# KingdomYouth
+
+A Banished-like settlement builder. You never control your settlers directly. You place buildings, assign settlers to jobs, and keep the stockpile healthy, while the settlers look after their own hunger, rest, and warmth.
+
+Balance growth against food, warmth, and shelter as the seasons change.
+
+> **Status:** all MVP roadmap milestones (M0–M5) are done. The balance is a first draft and will change.
+
+## Features
+
+- Top-down 2D tile-grid world with forests, lakes, and rock
+- Settlers with needs (hunger, rest, warmth, health) who act on their own
+- Buildings: house, woodcutter's lodge, farm, storage barn
+- Job assignment by clicking settlers and buildings
+- Seasons, day/night cycle, and winter heating
+- Births, deaths, and a population that depends on housing and food
+- HUD with resource bar, build menu, info panel, and toasts
+- Save and load to a JSON file
+
+## Requirements
+
+- [Godot 4.4.1](https://godotengine.org/download/archive/4.4.1-stable/)
+
+## Running the game
+
+Open the project in Godot 4.4.1 and press **Play**, or run it from the terminal:
+
+```sh
+godot --path .
+```
+
+## Controls
+
+| Action | Control |
+| --- | --- |
+| Pan the camera | `W` `A` `S` `D` or arrow keys |
+| Zoom | Mouse wheel |
+| Select a settler or building | Left-click |
+| Place a building | `B`, pick it in the build menu, then left-click |
+| Save / load | `F5` / `F9` |
+
+The full guide to controls, buildings, and the first hour of play is in [docs/tutorial.md](docs/tutorial.md).
+
+## Project layout
+
+```
+assets/      Art and audio
+docs/        Roadmap, tickets, tutorial, and session log
+resources/   Building, job, and tileset resources
+scenes/      Godot scenes
+scripts/     GDScript: autoloads, entities, world, buildings, UI
+```
+
+Planning lives in [docs/roadmap.md](docs/roadmap.md) and [docs/tickets/](docs/tickets/).
+
+## License
+
+KingdomYouth is source-available. You may use, study, modify, and share it free of charge for non-commercial purposes. Any distributed copy or fork must stay free, include its source, and use the same license. Commercial use requires the author's written permission.
+
+See [LICENSE](LICENSE) for the full terms.
