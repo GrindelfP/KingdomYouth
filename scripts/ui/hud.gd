@@ -14,7 +14,7 @@ const BAR_GOODS: Array[StringName] = [&"logs", &"stone", &"iron", &"firewood", &
 const FOOD_KEY := &"food"
 const STORAGE_WARN_RATIO := 0.9
 const STORAGE_CLEAR_RATIO := 0.8
-const FOOD_COLOR := Color(0.88, 0.75, 0.27)
+const FOOD_ICON := preload("res://assets/art/icons/food.png")
 
 var _build: BuildController
 var _jobs: JobController
@@ -138,8 +138,8 @@ func _build_top_bar() -> PanelContainer:
 	row.add_theme_constant_override("separation", 24)
 	margin.add_child(row)
 	for id in BAR_GOODS:
-		row.add_child(_make_resource_entry(id, ResourceCatalog.display_name(id), ResourceCatalog.get_def(id).color))
-	_food_box = _make_resource_entry(FOOD_KEY, "Food", FOOD_COLOR)
+		row.add_child(_make_resource_entry(id, ResourceCatalog.display_name(id), ResourceCatalog.get_def(id).icon))
+	_food_box = _make_resource_entry(FOOD_KEY, "Food", FOOD_ICON)
 	row.add_child(_food_box)
 	_storage_label = _make_label()
 	row.add_child(_storage_label)
@@ -204,13 +204,14 @@ func _make_label() -> Label:
 	return label
 
 
-func _make_resource_entry(key: StringName, title: String, color: Color) -> HBoxContainer:
+func _make_resource_entry(key: StringName, title: String, texture: Texture2D) -> HBoxContainer:
 	var box := HBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.mouse_filter = Control.MOUSE_FILTER_PASS
-	var icon := ColorRect.new()
-	icon.color = color
-	icon.custom_minimum_size = Vector2(12, 12)
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.custom_minimum_size = Vector2(16, 16)
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(icon)

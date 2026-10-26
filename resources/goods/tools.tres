@@ -1,6 +1,8 @@
-[gd_resource type="Resource" script_class="ResourceDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="ResourceDef" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/economy/resource_def.gd" id="1_def"]
+
+[ext_resource type="Texture2D" path="res://assets/art/icons/tools.png" id="2_icon"]
 
 [resource]
 script = ExtResource("1_def")
@@ -10,3 +12,4 @@ category = 2
 color = Color(0.290, 0.564, 0.760, 1)
 sort_order = 4
 starting_amount = 12
+icon = ExtResource("2_icon")
