@@ -9,7 +9,7 @@ id = &"farm"
 display_name = "Farm"
 footprint = Vector2i(3, 3)
 cost = {
-0: 15
+&"logs": 15
 }
 build_time = 8.0
 job = ExtResource("2_job")

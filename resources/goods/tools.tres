@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ResourceDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/resource_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"tools"
+display_name = "Tools"
+category = 2
+color = Color(0.290, 0.564, 0.760, 1)
+sort_order = 4
+starting_amount = 12

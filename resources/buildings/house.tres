@@ -8,7 +8,7 @@ id = &"house"
 display_name = "House"
 footprint = Vector2i(2, 2)
 cost = {
-0: 15
+&"logs": 15
 }
 build_time = 6.0
 housing_capacity = 4

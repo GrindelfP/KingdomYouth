@@ -127,7 +127,7 @@ func _update_heating(dt: float) -> void:
 			continue
 		house.heat_left = maxf(house.heat_left - dt, 0.0)
 		if not house.is_heated() and house.residents.size() > 0:
-			if ResourceStockpile.remove(ResourceStockpile.Type.WOOD, FUEL_PER_HEATING):
+			if ResourceStockpile.remove(&"firewood", FUEL_PER_HEATING):
 				house.heat_left = HEAT_DURATION
 
 
@@ -154,7 +154,7 @@ func _update_births(dt: float) -> void:
 		house.birth_cooldown = maxf(house.birth_cooldown - dt, 0.0)
 		if house.birth_cooldown > 0.0 or not house.has_free_housing():
 			continue
-		if house.residents.size() < MIN_PARENTS or ResourceStockpile.get_amount(ResourceStockpile.Type.FOOD) < BIRTH_MIN_FOOD:
+		if house.residents.size() < MIN_PARENTS or ResourceStockpile.get_food_total() < BIRTH_MIN_FOOD:
 			continue
 		var cells := house.get_access_cells()
 		if cells.is_empty():

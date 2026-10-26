@@ -8,6 +8,6 @@ id = &"storage_barn"
 display_name = "Storage Barn"
 footprint = Vector2i(2, 2)
 cost = {
-0: 10
+&"logs": 10
 }
 build_time = 5.0

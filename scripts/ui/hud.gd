@@ -10,11 +10,15 @@ const SEASON_MESSAGES := [
 	"Winter. Farms rest and unheated settlers grow cold.",
 ]
 const SPEED_LABELS := ["||", ">", ">>", ">>>"]
+const BAR_GOODS: Array[StringName] = [&"logs", &"stone", &"iron", &"firewood", &"tools"]
+const FOOD_KEY := &"food"
+const FOOD_COLOR := Color(0.88, 0.75, 0.27)
 
 var _build: BuildController
 var _jobs: JobController
 var _settlers: SettlerManager
-var _resource_labels: Array[Label] = []
+var _resource_labels: Dictionary = {}
+var _food_box: Control
 var _time_label: Label
 var _speed_buttons: Array[Button] = []
 var _population_label: Label
@@ -62,8 +66,9 @@ func _ready() -> void:
 	info.setup(_jobs, _settlers, _build)
 
 	ResourceStockpile.resource_changed.connect(_on_resource_changed)
-	for type in ResourceStockpile.Type.values():
-		_on_resource_changed(type, ResourceStockpile.get_amount(type))
+	for id in BAR_GOODS:
+		_on_resource_changed(id, ResourceStockpile.get_amount(id))
+	_refresh_food()
 	_build.hint_changed.connect(func(text: String) -> void: _hint_label.text = text)
 	_build.construction_completed.connect(_on_construction_completed)
 	_settlers.settler_born.connect(_on_settler_born)
@@ -88,7 +93,7 @@ func add_toast(text: String) -> void:
 		var oldest := _toasts.get_child(0)
 		_toasts.remove_child(oldest)
 		oldest.queue_free()
-	get_tree().create_timer(TOAST_SECONDS).timeout.connect(func() -> void:
+	get_tree().create_timer(TOAST_SECONDS, true, false, true).timeout.connect(func() -> void:
 		if is_instance_valid(label):
 			label.queue_free()
 	)
@@ -105,10 +110,10 @@ func _build_top_bar() -> PanelContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
 	margin.add_child(row)
-	for type in ResourceStockpile.Type.values():
-		var label := _make_label()
-		_resource_labels.append(label)
-		row.add_child(label)
+	for id in BAR_GOODS:
+		row.add_child(_make_resource_entry(id, ResourceCatalog.display_name(id), ResourceCatalog.get_def(id).color))
+	_food_box = _make_resource_entry(FOOD_KEY, "Food", FOOD_COLOR)
+	row.add_child(_food_box)
 	_population_label = _make_label()
 	row.add_child(_population_label)
 	_time_label = _make_label()
@@ -167,8 +172,42 @@ func _make_label() -> Label:
 	return label
 
 
-func _on_resource_changed(type: int, new_amount: int) -> void:
-	_resource_labels[type].text = "%s: %d" % [ResourceStockpile.TYPE_NAMES[type], new_amount]
+func _make_resource_entry(key: StringName, title: String, color: Color) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.mouse_filter = Control.MOUSE_FILTER_PASS
+	var icon := ColorRect.new()
+	icon.color = color
+	icon.custom_minimum_size = Vector2(12, 12)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(icon)
+	var label := _make_label()
+	label.text = "%s: 0" % title
+	label.set_meta("title", title)
+	_resource_labels[key] = label
+	box.add_child(label)
+	return box
+
+
+func _set_entry(key: StringName, amount: int) -> void:
+	var label: Label = _resource_labels[key]
+	label.text = "%s: %d" % [label.get_meta("title"), amount]
+
+
+func _refresh_food() -> void:
+	_set_entry(FOOD_KEY, ResourceStockpile.get_food_total())
+	var lines := PackedStringArray()
+	for id in ResourceCatalog.ids_in_category(ResourceDef.Category.FOOD):
+		lines.append("%s: %d" % [ResourceCatalog.display_name(id), ResourceStockpile.get_amount(id)])
+	_food_box.tooltip_text = "\n".join(lines)
+
+
+func _on_resource_changed(id: StringName, new_amount: int) -> void:
+	if _resource_labels.has(id):
+		_set_entry(id, new_amount)
+	elif ResourceCatalog.get_def(id).category == ResourceDef.Category.FOOD:
+		_refresh_food()
 
 
 func _on_construction_completed(building: Building) -> void:

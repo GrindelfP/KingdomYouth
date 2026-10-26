@@ -1,62 +1,54 @@
 extends Node
 
-signal resource_changed(type: Type, new_amount: int)
-
-enum Type { WOOD, FOOD, STONE }
-
-const TYPE_NAMES := ["Wood", "Food", "Stone"]
-const STARTING_AMOUNTS := {
-	Type.WOOD: 50,
-	Type.FOOD: 20,
-	Type.STONE: 0,
-}
+signal resource_changed(id: StringName, new_amount: int)
 
 var _amounts: Dictionary = {}
 
 
 func _ready() -> void:
-	for type in Type.values():
-		_amounts[type] = STARTING_AMOUNTS.get(type, 0)
+	reset()
 
 
 func reset() -> void:
 	_amounts.clear()
-	for type in Type.values():
-		_amounts[type] = STARTING_AMOUNTS.get(type, 0)
+	for id in ResourceCatalog.all_ids():
+		_amounts[id] = ResourceCatalog.get_def(id).starting_amount
+		resource_changed.emit(id, _amounts[id])
 
 
-func to_save_data() -> Array:
-	var amounts := []
-	for type in Type.values():
-		amounts.append(_amounts[type])
-	return amounts
+func to_save_data() -> Dictionary:
+	var data := {}
+	for id in _amounts:
+		data[String(id)] = _amounts[id]
+	return data
 
 
-func from_save_data(data: Array) -> void:
-	for type in Type.values():
-		_amounts[type] = int(data[type])
+func from_save_data(data: Dictionary) -> void:
+	for id in ResourceCatalog.all_ids():
+		_set_amount(id, int(data.get(String(id), 0)))
 
 
-func get_amount(type: Type) -> int:
-	return _amounts[type]
+func get_amount(id: StringName) -> int:
+	return _amounts.get(id, 0)
 
 
-func add(type: Type, amount: int) -> void:
+func add(id: StringName, amount: int) -> void:
 	assert(amount >= 0)
-	_set_amount(type, get_amount(type) + amount)
+	assert(ResourceCatalog.has(id))
+	_set_amount(id, get_amount(id) + amount)
 
 
-func remove(type: Type, amount: int) -> bool:
+func remove(id: StringName, amount: int) -> bool:
 	assert(amount >= 0)
-	if get_amount(type) < amount:
+	if get_amount(id) < amount:
 		return false
-	_set_amount(type, get_amount(type) - amount)
+	_set_amount(id, get_amount(id) - amount)
 	return true
 
 
 func can_afford(cost: Dictionary) -> bool:
-	for type in cost:
-		if get_amount(type) < cost[type]:
+	for id in cost:
+		if get_amount(id) < cost[id]:
 			return false
 	return true
 
@@ -64,11 +56,36 @@ func can_afford(cost: Dictionary) -> bool:
 func spend(cost: Dictionary) -> bool:
 	if not can_afford(cost):
 		return false
-	for type in cost:
-		remove(type, cost[type])
+	for id in cost:
+		remove(id, cost[id])
 	return true
 
 
-func _set_amount(type: Type, new_amount: int) -> void:
-	_amounts[type] = new_amount
-	resource_changed.emit(type, new_amount)
+func get_category_total(category: ResourceDef.Category) -> int:
+	var total := 0
+	for id in ResourceCatalog.ids_in_category(category):
+		total += get_amount(id)
+	return total
+
+
+func get_food_total() -> int:
+	return get_category_total(ResourceDef.Category.FOOD)
+
+
+func remove_food(amount: int) -> bool:
+	assert(amount >= 0)
+	if get_food_total() < amount:
+		return false
+	var kinds := ResourceCatalog.ids_in_category(ResourceDef.Category.FOOD)
+	for i in amount:
+		var best: StringName = kinds[0]
+		for id in kinds:
+			if get_amount(id) > get_amount(best):
+				best = id
+		remove(best, 1)
+	return true
+
+
+func _set_amount(id: StringName, new_amount: int) -> void:
+	_amounts[id] = new_amount
+	resource_changed.emit(id, new_amount)

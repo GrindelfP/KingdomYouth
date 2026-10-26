@@ -26,17 +26,17 @@ Run the game from the editor (`open -a Godot`, then Play), or from the terminal 
 ## What you start with
 
 - 5 settlers, all homeless.
-- 50 wood, 20 food, 0 stone. Stone is not used yet.
+- 80 logs, 30 stone, 10 iron, 40 firewood, 12 tools, 60 wheat, and 40 berries. The top bar shows logs, stone, iron, firewood, tools, and total food. Hover over Food to see each kind.
 - A map with forests, lakes, and rock. Your settlers start near the middle.
 
 ## The buildings
 
 | Building | Cost | Size | What it does |
 | --- | --- | --- | --- |
-| **House** | 15 wood | 2x2 | Holds 4 settlers. Settlers with a home rest there, stay warm in winter, and can have children. |
-| **Woodcutter's Lodge** | 10 wood | 2x2 | Has 2 woodcutter slots. Woodcutters walk to the nearest forest tile and gather 2 wood each trip. The tile turns to grass and grows back after 2 minutes. |
-| **Farm** | 15 wood | 3x3 | Has 3 farmer slots. Each harvest gives 3 food. Farms work faster in summer and stop in winter. |
-| **Storage Barn** | 10 wood | 2x2 | Decorative only. The stockpile is shared by the whole settlement, so the barn adds nothing yet. |
+| **House** | 15 logs | 2x2 | Holds 4 settlers. Settlers with a home rest there, stay warm in winter, and can have children. |
+| **Woodcutter's Lodge** | 10 logs | 2x2 | Has 2 woodcutter slots. Woodcutters walk to the nearest forest tile and gather 2 logs each trip. The tile turns to grass and grows back after 2 minutes. |
+| **Farm** | 15 logs | 3x3 | Has 3 farmer slots. Each harvest gives 3 wheat. Farms work faster in summer and stop in winter. |
+| **Storage Barn** | 10 logs | 2x2 | Decorative only. The stockpile is shared by the whole settlement, so the barn adds nothing yet. |
 
 Buildings go on grass only. You cannot build on forest, water, or rock, or on top of another building. Buildings also block walking, so settlers path around them. Settlers standing on a spot do not stop you building there; they just walk away.
 
@@ -62,7 +62,7 @@ Click **Woodcutter's Lodge**, then place it on grass close to the forest. Woodcu
 2. Click the lodge. The panel now lists its workers and the idle settlers.
 3. Press **Assign** next to a settler. Do this for up to 2 settlers.
 
-Assigned settlers walk to the forest, gather wood, and return to repeat the loop. Wood appears in the top bar.
+Assigned settlers walk to the forest, gather logs, and return to repeat the loop. Logs appear in the top bar.
 
 To take a settler off the job, select the building and press **Remove**, or select the settler and press **Unassign job**.
 
@@ -70,7 +70,7 @@ To take a settler off the job, select the building and press **Remove**, or sele
 
 Click **Farm** and place it on a 3x3 patch of grass. Then assign up to 3 settlers to it, the same way as in step 4. Food rises as farmers harvest.
 
-Settlers eat from the shared food stock by themselves when they get hungry. If food runs out, they starve and their health falls.
+Settlers eat from the shared food stock by themselves when they get hungry, taking from the most plentiful kind first. If food runs out, they starve and their health falls.
 
 ### 6. Keep an eye on your settlers
 
@@ -90,7 +90,7 @@ The year has 12 months grouped into four seasons: spring, summer, autumn, and wi
 - **Summer:** farms run at 1.5 times their normal speed. Stock up.
 - **Winter:** farms stop completely. Unheated settlers lose warmth, and then health.
 
-To keep settlers warm in winter, each house with residents burns 1 wood every 20 seconds. Keep wood in the stockpile before winter arrives. The toast for "Winter" is a reminder.
+To keep settlers warm in winter, each house with residents burns 1 firewood every 20 seconds. Nothing produces firewood yet, so the starting stock is all you have. The toast for "Winter" is a reminder.
 
 The top bar shows the current month and year, for example "Mid Summer, Year 2".
 
@@ -102,7 +102,7 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 
 - Build a house before your first birth is possible, since births need room.
 - Place the farm and lodge close to houses to shorten settler trips.
-- Watch the wood count. Houses use wood in winter, and buildings cost wood.
+- Watch the firewood count in winter, and the log count when you build.
 - Use the info panel to check why a settler is idle. The job line shows **paused** when the settler is eating or resting.
 - A forest tile that a woodcutter used will come back after 2 minutes, so a forest can last a long time if you spread woodcutters around.
 
@@ -110,5 +110,5 @@ Press `F5` or click **Save**. Press `F9` or click **Load** to go back to the sav
 
 - The balance (costs, rates, timings) is a first draft and will change.
 - There is no main menu or settings screen.
-- Stone is not produced or used yet.
+- Stone, iron, tools, and most food kinds are not produced or used yet.
 - Save files from older versions of the game may not load after changes.

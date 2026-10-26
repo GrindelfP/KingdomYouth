@@ -52,7 +52,7 @@ func is_starving() -> bool:
 
 
 func try_eat() -> bool:
-	if not ResourceStockpile.remove(ResourceStockpile.Type.FOOD, FOOD_PER_MEAL):
+	if not ResourceStockpile.remove_food(FOOD_PER_MEAL):
 		return false
 	hunger = maxf(hunger - MEAL_RESTORE, 0.0)
 	return true

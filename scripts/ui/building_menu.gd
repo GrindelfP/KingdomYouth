@@ -23,6 +23,6 @@ static func _cost_text(cost: Dictionary) -> String:
 	if cost.is_empty():
 		return "free"
 	var parts := PackedStringArray()
-	for type in cost:
-		parts.append("%d %s" % [cost[type], ResourceStockpile.TYPE_NAMES[type]])
+	for type: StringName in cost:
+		parts.append("%d %s" % [cost[type], ResourceCatalog.display_name(type)])
 	return ", ".join(parts)

@@ -9,7 +9,7 @@ id = &"woodcutters_lodge"
 display_name = "Woodcutter's Lodge"
 footprint = Vector2i(2, 2)
 cost = {
-0: 10
+&"logs": 10
 }
 build_time = 5.0
 job = ExtResource("2_job")
