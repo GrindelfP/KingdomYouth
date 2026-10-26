@@ -1,6 +1,6 @@
 # 0015 — Resource catalog
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** M7 — Banished Economy
 - **Depends on:** 0004, 0014
 
@@ -27,12 +27,21 @@ Banished's core tension comes from many interlocking goods: building materials, 
 - Spoilage.
 
 ## Acceptance criteria
-- [ ] Adding a new good requires only a new `.tres` file (and registering it in the catalog list if the catalog uses an explicit list).
-- [ ] No references to `ResourceStockpile.Type` remain.
-- [ ] Settlers eat from any food kind; HUD food total matches the sum.
-- [ ] Building costs use logs/stone; heating uses firewood.
-- [ ] Save/load round-trips all goods.
-- [ ] Headless run is free of script errors.
+- [x] Adding a new good requires only a new `.tres` file (and registering it in the catalog list if the catalog uses an explicit list).
+- [x] No references to `ResourceStockpile.Type` remain.
+- [x] Settlers eat from any food kind; HUD food total matches the sum.
+- [x] Building costs use logs/stone; heating uses firewood.
+- [x] Save/load round-trips all goods.
+- [x] Headless run is free of script errors.
 
 ## Open questions
 - None.
+
+## Implementation notes
+- `ResourceDef` (`scripts/economy/resource_def.gd`) also has `sort_order` (display order) and `starting_amount`, so a new good is one `.tres` in `resources/goods/` with no code change. `ResourceCatalog` scans that directory lazily (handles `.remap` in exports).
+- `ResourceCatalog` static API: `has(id)`, `get_def(id)`, `display_name(id)`, `all_ids()`, `ids_in_category(category)`.
+- `ResourceStockpile` API: `get_amount`, `add`, `remove`, `can_afford`, `spend`, `get_category_total(category)`, `get_food_total()`, `remove_food(amount)` (atomic, most plentiful kind first), signal `resource_changed(id, amount)`. `reset()` and `from_save_data()` emit the signal for every good.
+- `JobDef.output_id: StringName` replaces `output_type`. Building costs are `{&"logs": N}`; amounts unchanged from the old wood costs.
+- Save version is 3; stock is saved as `{id: amount}`, unknown ids are ignored and missing ids load as 0.
+- HUD shows Logs, Stone, Iron, Firewood, Tools and Food (total, with a per-kind tooltip) with colored square icons. Toast timers now ignore time scale.
+- Nothing produces firewood yet (ticket 0019), so winter heating drains the starting 40.
