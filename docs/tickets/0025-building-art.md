@@ -4,6 +4,9 @@
 - **Milestone:** M9 — Visual Overhaul
 - **Depends on:** 0024, 0020, 0021
 
+## Style
+Follow `docs/art-style.md` and the pipeline notes in ticket 0023 (`tools/art/`).
+
 ## Goal
 Every building is instantly recognizable: unique sprite, silhouette, roof color and prop, plus readable construction stages.
 

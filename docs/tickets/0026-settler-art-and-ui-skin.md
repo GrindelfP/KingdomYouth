@@ -4,6 +4,9 @@
 - **Milestone:** M9 — Visual Overhaul
 - **Depends on:** 0025
 
+## Style
+Follow `docs/art-style.md` and the pipeline notes in ticket 0023 (`tools/art/`).
+
 ## Goal
 Settlers look like little people whose job you can read, and the UI looks like part of a medieval village game instead of default Godot widgets.
 
