@@ -1,6 +1,6 @@
 # 0030 — Twenty-year survival & demographic baseline
 
-- **Status:** in-progress
+- **Status:** done
 - **Milestone:** [M11 — Readable Economy & Long-Run Baseline](../roadmap.md#m11--readable-economy--long-run-baseline)
 - **Depends on:** 0028, 0029
 
@@ -28,7 +28,7 @@ The current three-year soak does not establish generational replacement. Extend 
 - [x] No-food/no-fuel controls still fail for observable hunger/cold reasons.
 - [x] Baseline balance, planner rules, limitations, and results are recorded.
 
-Implementation and headless verification are complete on the development branch; status remains `in-progress` until merged, per the ticket lifecycle. See [measured results, resolved failures, and limitations](../balance.md#m11-twenty-year-baseline-ticket-0030). Seeds 1/2/3 survive twenty years without deaths; the controls die of hunger/cold. No game balance constants changed. This is not the 30-year release gate.
+Implementation and headless verification are complete and merged. See [measured results, resolved failures, and limitations](../balance.md#m11-twenty-year-baseline-ticket-0030). Seeds 1/2/3 survive twenty years without deaths; the controls die of hunger/cold. No game balance constants changed. This is not the 30-year release gate.
 
 ## Open questions
 - None; adjust affordable planner rules and measured balance rather than masking failures.
