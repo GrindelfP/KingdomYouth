@@ -13,3 +13,4 @@
 2026-11-08 - 00:03 - removed planned crises from v3 and used Sol to write and individually commit tickets 0028-0049; left v0.2 save compatibility policy open
 2026-11-08 - 01:01 - merged ticket 0028 inventory accounting from Terra's development branch after focused, soak, round-trip, and windowed visual checks; dispatched Sol for ticket 0029
 2026-11-08 - 01:31 - merged Sol's ticket 0029 economy history and shortage feedback after focused, soak, save/load, and scripted windowed checks; dispatched Sol for ticket 0030 long-run survival baseline
+2026-11-08 - 01:54 - merged Sol's ticket 0030 twenty-year baseline, verified three seeds and hunger/cold controls, and dispatched Sol for ticket 0031 market logistics
