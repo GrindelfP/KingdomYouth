@@ -3,7 +3,6 @@ extends Node
 const Planner := preload("res://tools/soak/planner.gd")
 const WORLD_SCENE := "res://scenes/world/world.tscn"
 const TIME_SCALE := 10.0
-const FRAME_STEP := 1.0 / 30.0
 const STUCK_SECONDS := 90.0
 
 var _mode := "planned"
@@ -11,7 +10,10 @@ var _years := 20
 var _seed := 1
 var _births := 0
 var _grown := 0
+var _grown_ids: Dictionary = {}
+var _worked: Dictionary = {}
 var _successors: Dictionary = {}
+var _successor_houses: Dictionary = {}
 var _deaths := {"hunger": 0, "cold": 0, "exposure": 0, "old_age": 0}
 var _expected: Dictionary = {}
 var _flow_seen: Dictionary = {}
@@ -23,11 +25,9 @@ var _planner
 var _frames := 0
 var _last_logged := -1
 var _min_pop := 999
-var _starved_months := 0
 var _idle_since: Dictionary = {}
 var _frozen: Dictionary = {}
 var _frozen_reports: Array[String] = []
-var _stuck_reports := 0
 var _peak_pop := 0
 var _first_death_month := -1
 var _population_zero_month := -1
@@ -53,7 +53,9 @@ func _ready() -> void:
 	_buildings = world.get_node("Buildings")
 	_settlers = world.get_node("Settlers")
 	_settlers.settler_born.connect(func(_settler: Settler) -> void: _births += 1)
-	_settlers.settler_grew_up.connect(func(_settler: Settler) -> void: _grown += 1)
+	_settlers.settler_grew_up.connect(func(settler: Settler) -> void:
+		_grown += 1
+		_grown_ids[settler.display_id] = true)
 	_settlers.settler_died.connect(_on_death)
 	_planner = Planner.new(_world, _buildings, world.get_node("Labor"))
 	_queue_plan()
@@ -71,19 +73,12 @@ func _queue_plan() -> void:
 			continue
 		_planner.add(id)
 	_planner.staffing = {&"foresters_lodge": 1, &"gatherers_hut": 1, &"crop_field_6": 2, &"crop_field_4": 2, &"woodcutter": 1, &"hunting_cabin": 1, &"fishing_dock": 1, &"quarry": 1, &"mine": 1, &"blacksmith": 1}
-	_planner.builders_target = 1
-	_planner.add(&"hunting_cabin", 2)
-	_planner.add(&"house", 3)
-	_planner.add(&"crop_field_4", 4)
-	_planner.add(&"fishing_dock", 5)
-	_planner.add(&"house", 6)
+	_planner.long_run = true
+	_planner.allow_fuel = _mode != "nowood"
 	_planner.add(&"quarry", 8)
 	_planner.add(&"mine", 10)
 	_planner.add(&"blacksmith", 12)
-	_planner.add(&"house", 14)
-	_planner.add(&"crop_field_6", 14)
-	_planner.add(&"storage_barn", 16)
-	_planner.add(&"house", 18)
+	_planner.add(&"hunting_cabin", 14)
 
 
 func _process(_delta: float) -> void:
@@ -110,8 +105,11 @@ func _track() -> void:
 	if _frames % 60 != 0:
 		return
 	for settler in _settlers.living_settlers():
+		if _grown_ids.has(settler.display_id) and settler.worker.is_working():
+			_worked[settler.display_id] = true
 		if not settler.parents.is_empty() and settler.partner != null and settler.home != null and not settler.lives_with_parent():
 			_successors[settler.display_id] = true
+			_successor_houses[settler.home.origin] = true
 		var idle := settler.worker.get_state_name() == "Idle" and not settler.worker.is_paused() and settler.is_working_age() and not settler.is_carrying()
 		var key := settler.get_instance_id()
 		if idle:
@@ -127,7 +125,7 @@ func _track() -> void:
 		var record: Dictionary = _frozen.get(key, {})
 		if not moving or record.get("cell") != cell:
 			_frozen[key] = {"cell": cell, "since": TimeManager.get_time_months(), "reported": false}
-		elif TimeManager.get_time_months() - float(record["since"]) > 0.75 and not record["reported"]:
+		elif (TimeManager.get_time_months() - float(record["since"])) * TimeManager.SECONDS_PER_MONTH > STUCK_SECONDS and not record["reported"]:
 			record["reported"] = true
 			_frozen_reports.append("m%d %s %s %s at %s carrying %s" % [TimeManager.month, settler.given_name, settler.profession, state, cell, settler.carried_id])
 	for key in _idle_since.keys():
@@ -142,7 +140,13 @@ func _log_row() -> void:
 	var locations := []
 	for location in TownInventory.LOCATIONS + [&"total"]:
 		locations.append("%s=%d/%d/%d" % [location, TownInventory.amount(inventory, location, food_ids), TownInventory.amount(inventory, location, [&"firewood"]), TownInventory.amount(inventory, location, [&"tools"])])
-	print("  food/fuel/tools %s births=%d grew=%d successors=%d deaths=%s workforce=%d" % [" ".join(locations), _births, _grown, _successors.size(), _deaths, _settlers.count_by_stage()[1] + _settlers.count_by_stage()[2]])
+	var labor := _world.get_node("Labor") as LaborManager
+	var staffing := {}
+	for profession in labor.profession_ids():
+		var count := labor.get_count(profession)
+		if count > 0:
+			staffing[profession] = count
+	print("  food/fuel/tools %s births=%d grew=%d worked=%d successors=%d households=%d deaths=%s workforce=%d staffing=%s" % [" ".join(locations), _births, _grown, _worked.size(), _successors.size(), _successor_houses.size(), _deaths, _settlers.count_by_stage()[1] + _settlers.count_by_stage()[2], staffing])
 	var stages := _settlers.count_by_stage()
 	var food_hh := 0
 	var fw_hh := 0
@@ -161,7 +165,9 @@ func _log_row() -> void:
 	var long_idle := ""
 	for key in _idle_since:
 		if TimeManager.get_time_months() - _idle_since[key] > 1.5 and is_instance_id_valid(key):
-			long_idle += " " + String(instance_from_id(key).profession)
+			var settler := instance_from_id(key) as Settler
+			var reason := WorkplaceStatus.for_worker(settler.worker.building, settler) if settler.worker.building != null else "Unassigned labor reserve"
+			long_idle += " %s[%s]" % [settler.profession, reason]
 	print("Y%d %-6s | %3d (%d %d %d) | %4d %4d %4d %3d %3d %3d | %4d/%4d | %2d %2d | %3d/%3d | %5.1f | idle>1.5mo:%s" % [
 		TimeManager.get_year(), TimeManager.get_season_name(), _settlers.population(),
 		stages[1], stages[0], stages[2],
@@ -182,14 +188,15 @@ func _finish() -> void:
 	print("frozen reports: %d" % _frozen_reports.size())
 	for line in _frozen_reports.slice(0, 12):
 		print("  " + line)
-	print("demography births=%d grew=%d successors=%d deaths=%s inventory_failures=%d" % [_births, _grown, _successors.size(), _deaths, _audit_failures.size()])
+	print("demography births=%d grew=%d worked=%d successors=%d households=%d deaths=%s inventory_failures=%d" % [_births, _grown, _worked.size(), _successors.size(), _successor_houses.size(), _deaths, _audit_failures.size()])
 	for line in _audit_failures.slice(0, 12):
 		print("  " + line)
 	var passed := _frozen_reports.is_empty() and _audit_failures.is_empty()
 	if _mode == "planned":
 		passed = passed and _settlers.population() > 0
 		if _years >= 20:
-			passed = passed and _grown > 0 and not _successors.is_empty()
+			passed = passed and not _worked.is_empty() and not _successor_houses.is_empty()
+			passed = passed and _deaths["hunger"] == 0 and _deaths["cold"] == 0 and _deaths["exposure"] == 0
 	else:
 		passed = passed and _settlers.population() == 0 and _deaths["hunger" if _mode == "neglect" else "cold"] > 0
 	print("VERDICT: %s" % ("PASS" if passed else "FAIL"))

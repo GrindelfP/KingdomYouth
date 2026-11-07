@@ -13,6 +13,9 @@ var _configured: Dictionary = {}
 var queue: Array[Dictionary] = []
 var placed: Array[String] = []
 var skipped: Array[String] = []
+var long_run := false
+var allow_fuel := true
+var _next_management := 0.0
 
 
 func _init(world_grid: WorldGrid, build: BuildController, labor_manager: LaborManager) -> void:
@@ -26,8 +29,68 @@ func add(id: StringName, month := 0) -> void:
 
 
 func tick() -> void:
+	if long_run:
+		if TimeManager.get_time_months() >= _next_management:
+			_next_management = TimeManager.get_time_months() + 1.0 / 60.0
+			_manage_long_run()
+		_place()
+		return
 	_manage()
 	_place()
+
+
+func _manage_long_run() -> void:
+	var settlers := world.get_node("Settlers") as SettlerManager
+	var workforce := 0
+	var housing_needed := false
+	for settler in settlers.living_settlers():
+		if settler.is_working_age():
+			workforce += 1
+		if settler.age >= SettlerManager.MARRIAGE_AGE and (settler.home == null or settler.lives_with_parent()):
+			housing_needed = true
+	var budget := maxi(workforce - 2, 0)
+	var desired := {}
+	var priorities: Array[StringName] = [&"foresters_lodge", &"woodcutter", &"gatherers_hut", &"hunting_cabin", &"blacksmith", &"mine", &"quarry", &"crop_field_6", &"fishing_dock", &"crop_field_4"]
+	for type in priorities:
+		var target := int(staffing.get(type, 0))
+		if type == &"foresters_lodge" and ResourceStockpile.get_amount(&"logs") > 120:
+			target = 0
+		if type == &"woodcutter" and (not allow_fuel or ResourceStockpile.get_amount(&"firewood") > 120):
+			target = 0
+		if type == &"blacksmith" and ResourceStockpile.get_amount(&"tools") >= 20:
+			target = 0
+		if type == &"mine" and ResourceStockpile.get_amount(&"iron") >= 20:
+			target = 0
+		if type == &"quarry" and ResourceStockpile.get_amount(&"stone") >= 40:
+			target = 0
+		if type in [&"crop_field_6", &"crop_field_4", &"gatherers_hut"] and TimeManager.is_cold():
+			target = 0
+		for building in buildings.get_buildings():
+			if building.def.id != type:
+				continue
+			var count := mini(target, budget)
+			desired[building] = count
+			budget -= count
+	for building in desired:
+		building.desired_workers = desired[building]
+	labor.reconcile()
+	while labor.get_count(Professions.BUILDER) > 1:
+		labor.decrease(Professions.BUILDER)
+	if labor.get_count(Professions.BUILDER) == 0:
+		labor.increase(Professions.BUILDER)
+	if not queue.is_empty() or not buildings.get_sites().is_empty():
+		return
+	var empty_houses := 0
+	var food_capacity := 0
+	for building in buildings.get_buildings():
+		if building.def.housing_capacity > 0 and building.residents.is_empty():
+			empty_houses += 1
+		if building.storage != null and building.def.accepts(&"wheat"):
+			food_capacity += building.storage.capacity
+	if housing_needed and empty_houses == 0:
+		add(&"house")
+	elif ResourceStockpile.get_food_total() > food_capacity * 0.75:
+		add(&"storage_barn")
 
 
 func _manage() -> void:
