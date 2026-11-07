@@ -12,3 +12,4 @@
 2026-11-07 - 23:52 - planned Banished-inspired v3 roadmap M11-M20 with Sol, from economy visibility and long-run survival through markets, education, trade, crises, replayability, and release validation
 2026-11-08 - 00:03 - removed planned crises from v3 and used Sol to write and individually commit tickets 0028-0049; left v0.2 save compatibility policy open
 2026-11-08 - 01:01 - merged ticket 0028 inventory accounting from Terra's development branch after focused, soak, round-trip, and windowed visual checks; dispatched Sol for ticket 0029
+2026-11-08 - 01:31 - merged Sol's ticket 0029 economy history and shortage feedback after focused, soak, save/load, and scripted windowed checks; dispatched Sol for ticket 0030 long-run survival baseline
