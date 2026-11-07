@@ -194,8 +194,6 @@ func from_save_data(entries: Array, buildings: BuildController) -> void:
 		settler.needs.rest = float(entry["rest"])
 		settler.needs.warmth = float(entry["warmth"])
 		settler.needs.health = float(entry["health"])
-		if int(entry["carried_amount"]) > 0 and ResourceCatalog.has(StringName(entry["carried_id"])):
-			settler.set_carried(StringName(entry["carried_id"]), int(entry["carried_amount"]))
 		settler.has_tool = bool(entry["has_tool"])
 		settler.tool_wear = float(entry["tool_wear"])
 		var profession := StringName(entry["profession"])
@@ -208,6 +206,8 @@ func from_save_data(entries: Array, buildings: BuildController) -> void:
 			var job_building := buildings.find_building(WorldGrid.cell_from_json(entry["job"]))
 			if job_building:
 				settler.worker.assign(job_building)
+		if int(entry["carried_amount"]) > 0 and ResourceCatalog.has(StringName(entry["carried_id"])):
+			settler.set_carried(StringName(entry["carried_id"]), int(entry["carried_amount"]))
 	for entry in entries:
 		var settler: Settler = by_id[int(entry["display_id"])]
 		if int(entry["partner"]) >= 0 and by_id.has(int(entry["partner"])):
@@ -266,7 +266,7 @@ func _update_heating(dt: float) -> void:
 			continue
 		house.heat_left = maxf(house.heat_left - dt, 0.0)
 		if not house.is_heated() and house.residents.size() > 0:
-			if house.household.take(Building.FUEL_ID, FUEL_PER_HEATING) > 0:
+			if house.household.consume(Building.FUEL_ID, FUEL_PER_HEATING) > 0:
 				house.heat_left = HEAT_DURATION
 
 

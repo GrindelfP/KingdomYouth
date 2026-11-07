@@ -76,8 +76,11 @@ func _do_save() -> void:
 	var cargo_added := false
 	ResourceStockpile.add(&"firewood", 1)
 	for settler in _settlers.living_settlers():
-		if settler.is_carrying():
+		if settler.worker.building == null:
 			continue
+		if settler.is_carrying():
+			cargo_added = true
+			break
 		var sources := ResourceStockpile.find_sources(&"firewood", settler.get_grid_pos())
 		if not sources.is_empty():
 			settler.set_carried(&"firewood", sources[0].storage.take(&"firewood", 1))
@@ -154,5 +157,6 @@ func _digest() -> Dictionary:
 		"time": [TimeManager.month, snappedf(TimeManager.get_month_progress(), 0.001)],
 		"settlers": settlers, "buildings": buildings, "sites": sites, "stock": stock,
 		"town_inventory": TownInventory.snapshot(_buildings.get_buildings(), _buildings.get_sites(), _settlers.living_settlers()),
+		"economy": EconomyHistory.to_save_data(),
 		"trees": trees, "road_types": roads, "roads": _world.get_road_cells().size(),
 	}

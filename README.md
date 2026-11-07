@@ -21,6 +21,7 @@ Balance growth against food, warmth, and shelter as the seasons change.
 - Births, deaths, and a population that depends on housing and food
 - HUD with resource bar, clock and game speed (pause, 1x, 2x, 5x), a compact category build menu, profession panel, info panel, and toasts
 - Town inventory panel separates stored food and firewood from household, workplace, construction, and carried goods; only storage is available for withdrawals
+- Economy panel keeps 20 years of seasonal per-good flows; persistent household shortage alerts navigate to affected homes, and workplaces explain idle conditions ([details and thresholds](docs/economy.md))
 - Save and load to a JSON file; saves from older versions are rejected with a message
 
 ## Requirements
@@ -64,6 +65,7 @@ $G --headless --path . --fixed-fps 30 res://tools/soak/soak.tscn -- --mode=plann
 $G --headless --path . res://tools/soak/roundtrip.tscn -- --phase=save
 $G --headless --path . res://tools/soak/roundtrip.tscn -- --phase=load
 $G --headless --path . res://tools/soak/inventory_test.tscn
+$G --headless --path . res://tools/soak/economy_test.tscn
 ```
 
 Inventory totals count physical goods once, not reservations, worn equipment, or materials consumed by completed construction. Eating, heating, crafting, and construction consume goods. Cancellation and demolition return contents to general storage where possible; existing behavior discards anything that does not fit, and demolition also recovers half the building cost where space permits.

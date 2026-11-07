@@ -115,6 +115,12 @@ func remove(id: StringName, amount: int) -> bool:
 	return true
 
 
+func return_goods(id: StringName, amount: int) -> int:
+	var accepted := add(id, amount)
+	EconomyHistory.record("lost", id, amount - accepted)
+	return accepted
+
+
 func can_afford(cost: Dictionary) -> bool:
 	for id in cost:
 		if get_amount(id) < cost[id]:
@@ -127,6 +133,7 @@ func spend(cost: Dictionary) -> bool:
 		return false
 	for id in cost:
 		remove(id, cost[id])
+		EconomyHistory.record("consumed", id, int(cost[id]))
 	return true
 
 

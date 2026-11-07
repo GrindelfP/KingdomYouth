@@ -161,7 +161,7 @@ func consume_batch() -> bool:
 	if not has_batch():
 		return false
 	for entry in def.job.inputs:
-		input.take(StringName(entry["id"]), int(entry["amount"]))
+		input.consume(StringName(entry["id"]), int(entry["amount"]))
 	return true
 
 

@@ -41,9 +41,8 @@ var _population_label: Label
 var _hint_label: Label
 var _hint_panel: PanelContainer
 var _toasts: VBoxContainer
-var _inventory_panel: PanelContainer
-var _inventory_label: Label
-var _inventory_timer := 0.0
+var _inventory_panel: EconomyPanel
+var _shortage_button: Button
 
 
 func _ready() -> void:
@@ -93,13 +92,11 @@ func _ready() -> void:
 	_professions.position = Vector2(16, 140)
 	root.add_child(_professions)
 	_professions.setup(_labor)
-	_inventory_panel = PanelContainer.new()
-	_inventory_panel.position = Vector2(16, 140)
-	_inventory_panel.visible = false
-	_inventory_panel.theme_type_variation = &"WoodBar"
-	_inventory_label = _make_label(true)
-	_inventory_panel.add_child(_inventory_label)
+	_inventory_panel = EconomyPanel.new()
 	root.add_child(_inventory_panel)
+	_inventory_panel.setup(_build, _settlers, _jobs)
+	EconomyHistory.shortage_started.connect(func(kind: String) -> void:
+		add_toast("Household %s shortage. Open Shortages to inspect homes and supply paths." % kind, &"warning"))
 
 	ResourceStockpile.resource_changed.connect(_on_resource_changed)
 	for id in BAR_GOODS:
@@ -118,13 +115,11 @@ func _ready() -> void:
 	_on_speed_changed(TimeManager.get_speed_index())
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	_time_label.text = "%s, Year %d" % [TimeManager.get_month_name(), TimeManager.get_year()]
 	_update_storage()
-	_inventory_timer += delta
-	if _inventory_panel.visible and _inventory_timer >= 0.25:
-		_inventory_timer = 0.0
-		_refresh_inventory()
+	var count: int = EconomyHistory.shortages["food"].size() + EconomyHistory.shortages["fuel"].size()
+	_shortage_button.text = "Shortages: %d" % count
 	var stages := _settlers.count_by_stage()
 	_population_label.text = "Pop %d (%dA %dC %dE) Work %d Build %d" % [
 		_settlers.population(), stages[Settler.AgeStage.ADULT], stages[Settler.AgeStage.CHILD], stages[Settler.AgeStage.ELDER],
@@ -212,7 +207,9 @@ func _build_top_bar() -> PanelContainer:
 		_speed_buttons.append(button)
 		row.add_child(button)
 	row.add_child(_make_button("Professions (P)", _toggle_professions))
-	row.add_child(_make_button("Inventory", _toggle_inventory))
+	row.add_child(_make_button("Economy / Inventory", _toggle_inventory))
+	_shortage_button = _make_button("Shortages: 0", _open_shortages)
+	row.add_child(_shortage_button)
 	row.add_child(_make_button("Save", _save_game))
 	row.add_child(_make_button("Load", _load_game))
 	row.add_child(_make_button("New game", SaveManager.start_new_game))
@@ -223,24 +220,19 @@ func _toggle_inventory() -> void:
 	_inventory_panel.visible = not _inventory_panel.visible
 	if _inventory_panel.visible:
 		_professions.visible = false
-		_refresh_inventory()
+		_inventory_panel.refresh()
+
+
+func _open_shortages() -> void:
+	_inventory_panel.show()
+	_professions.hide()
+	_inventory_panel.refresh()
 
 
 func _toggle_professions() -> void:
 	_professions.visible = not _professions.visible
 	if _professions.visible:
 		_inventory_panel.visible = false
-
-
-func _refresh_inventory() -> void:
-	var data := TownInventory.snapshot(_build.get_buildings(), _build.get_sites(), _settlers.living_settlers())
-	var food := ResourceCatalog.ids_in_category(ResourceDef.Category.FOOD)
-	var fuel: Array[StringName] = [&"firewood"]
-	var lines := PackedStringArray(["Town inventory       Food   Firewood"])
-	for entry in [[&"storage", "Stored (available)"], [&"households", "Households"], [&"workplace", "Workplace"], [&"construction", "Construction"], [&"transit", "In transit"], [&"total", "Town total"]]:
-		lines.append("%s:  %d food / %d firewood" % [entry[1], TownInventory.amount(data, entry[0], food), TownInventory.amount(data, entry[0], fuel)])
-	lines.append("Only stored goods can be withdrawn.")
-	_inventory_label.text = "\n".join(lines)
 
 
 func _make_button(text: String, action: Callable) -> Button:

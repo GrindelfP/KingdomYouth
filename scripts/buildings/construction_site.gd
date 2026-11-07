@@ -91,12 +91,14 @@ func add_work(seconds: float) -> void:
 	progress += seconds
 	if progress >= def.build_time:
 		_done = true
+		for id in delivered.ids():
+			delivered.consume(id, delivered.get_amount(id))
 		completed.emit(self)
 
 
 func refund() -> void:
 	for id in delivered.ids():
-		ResourceStockpile.add(id, delivered.take(id, delivered.get_amount(id)))
+		ResourceStockpile.return_goods(id, delivered.take(id, delivered.get_amount(id)))
 
 
 func display_name() -> String:
