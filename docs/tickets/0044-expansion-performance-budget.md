@@ -2,7 +2,7 @@
 
 - **Status:** ready
 - **Milestone:** [M17 — Replayable Starts & Expansion](../roadmap.md#m17--replayable-starts--expansion)
-- **Depends on:** 0043
+- **Depends on:** 0036, 0043
 
 ## Goal
 Fix measurable default/large-town scale targets before final release integration.
