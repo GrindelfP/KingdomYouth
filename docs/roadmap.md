@@ -66,7 +66,7 @@ Owner playtest feedback: keep going, but (A) no day/night cycle, only seasons; (
 
 ## v3 — A Town Worth Keeping (planned; not implemented)
 
-**Version intent:** this is the requested **v3** roadmap, not a rename to v0.3. The implemented baseline remains v0.2 (M0–M10); no intervening release or v3 feature is implied to exist. All M11–M19 below are proposed work, with no tickets allocated yet. Create and refine tickets before implementation; the scopes and completion gates here guide that breakdown, not replace it.
+**Version intent:** this is the requested **v3** roadmap, not a rename to v0.3. The implemented baseline remains v0.2 (M0–M10); no intervening release or v3 feature is implied to exist. All M11–M19 below are planned work, detailed in tickets 0028–0049. These tickets are `ready` in scope, not implemented or exempt from their prerequisites. Follow their dependencies before starting work; the milestone completion gates remain release requirements.
 
 **Goal:** carry a vulnerable founding village into a durable, multigenerational town. Keep Banished's indirect control, scarce labor, physical goods, seasonal survival, and housing-led growth. Progress comes from surplus, trade, education, and better services, not research points, combat, or directly commanded settlers. Retain the 2D tile-grid presentation and seasons-only calendar.
 
@@ -75,46 +75,68 @@ Owner playtest feedback: keep going, but (A) no day/night cycle, only seasons; (
 **Delivery order:** M11 → M12 → M13 → M14 → M15 → M16 → M17 → M18 → M19. Dependencies below are the minimum functional prerequisites; this sequence is the preferred implementation order. Persistence, readable feedback, generated art consistent with `docs/art-style.md`, and focused regression checks belong to every milestone, not just release polish.
 
 ### M11 — Readable Economy & Long-Run Baseline
+- 0028 — [Town-wide inventory accounting](tickets/0028-economy-inventory-accounting.md)
+- 0029 — [Seasonal economy history & shortage feedback](tickets/0029-economy-history-and-warnings.md)
+- 0030 — [Twenty-year survival & demographic baseline](tickets/0030-long-run-survival-baseline.md)
 - **Depends on:** completed M10.
 - **Scope:** show food and fuel separately in storage, households, and transit, plus town-wide totals without double counting. Add seasonal production/consumption history, shortage warnings, and clear reasons for idle work (no inputs, no workers, full storage, unreachable destination). Extend the existing soak scenarios to cover aging and family replacement before adding new pressures.
 - **Complete when:** moving goods between inventories preserves totals; a player can explain a shortage from the UI; a repeatable 20-year planned-town run reports population age groups, births/deaths, food, fuel, and tools without script errors or permanently stuck settlers. Record baseline outcomes, including any survival failures, and resolve blockers before proceeding.
 
 ### M12 — Markets, Reserves & Production Limits
+- 0031 — [Market & vendor logistics](tickets/0031-market-and-vendor-logistics.md)
+- 0032 — [Production limits & reserve targets](tickets/0032-production-limits-and-reserves.md)
 - **Depends on:** M11.
 - **Scope:** add a market with assigned vendors who physically collect goods and supply nearby households. Keep direct household restocking as a fallback outside coverage or when a market is empty. Add per-good production limits and visible reserve targets so the player can balance winter stocks against labor without manually pausing every workshop. Targets guide work; they never conjure or teleport goods.
 - **Complete when:** covered and uncovered homes both restock correctly; market radius and staffing affect delivery time; a full or disconnected market cannot deadlock hauling; production stops at its limit and resumes after consumption. Save/load preserves market contents, settings, and valid hauling commitments without duplication.
 
 ### M13 — Clothing & Food Diversity
+- 0033 — [Leather, tailor & wearable coats](tickets/0033-leather-tailor-and-coats.md)
+- 0034 — [Food categories & long-term dietary health](tickets/0034-food-categories-and-diet.md)
 - **Depends on:** M12.
 - **Scope:** introduce leather as a hunting by-product, a tailor, wearable coats, and coat wear/replacement. Coats reduce exposure but do not replace heated homes. Group existing foods into understandable dietary categories and make a varied diet improve long-term health rather than instantly punish a single-food starter village. Show clothing and dietary status on settler and town panels.
 - **Complete when:** leather is hauled and consumed into coats, settlers obtain and wear them out, and clothed/unclothed winter checks demonstrate a documented difference. Varied food has a measurable benefit, basic food still prevents starvation, and the original first-winter loop remains viable before a tailor is built.
 
 ### M14 — Schools & Community Life
+- 0035 — [Schools, students & education](tickets/0035-school-students-and-education.md)
+- 0036 — [Cemeteries & bounded community happiness](tickets/0036-cemetery-and-community-happiness.md)
 - **Depends on:** M11 and M13.
 - **Scope:** add schools and teachers, a student life stage, and an education benefit to adult production. Make time spent in school a real short-term workforce cost; children unable to attend must still have a viable uneducated path into work. Add cemeteries and a small happiness model tied to bereavement and access to community services, with visible, bounded effects rather than unexplained productivity collapse.
 - **Complete when:** a child cohort enrolls, graduates, and joins the workforce across a long-run test; school closure or teacher loss has defined behavior and cannot strand students forever. Educated and uneducated work yields are documented, deaths can fill cemetery capacity, and household replacement remains possible over multiple generations.
 
 ### M15 — Trading Post & Merchant Visits
+- 0037 — [Shoreline trading post & reserved inventory](tickets/0037-trading-post-and-stock-reservations.md)
+- 0038 — [Merchant visits & confirmed barter](tickets/0038-merchants-and-confirmed-barter.md)
 - **Depends on:** M12 and M13.
 - **Scope:** add a shoreline trading post with assigned traders and a valid water approach, scheduled merchant visits, barter values, and explicit player-confirmed exchanges. Trade inventory must be physically stocked and unavailable for household use until released. Start with existing goods plus orchard seeds and livestock unlocks consumed by M16; show their future use clearly. Protect essential reserves from accidental export.
 - **Complete when:** an accessible post receives merchants; an inaccessible shore placement is rejected with a reason. A complete export/import cycle conserves quantities, respects capacity and reserves, and survives saving during a visit. Merchant offers and arrivals resume consistently after loading, and a settlement can still survive without trading.
 
 ### M16 — Orchards & Pastures
+- 0039 — [Orchards & imported seeds](tickets/0039-orchards-and-imported-seeds.md)
+- 0040 — [Pastures & sheep husbandry](tickets/0040-pastures-and-sheep-husbandry.md)
+- 0041 — [Wool coats & clothing replacement policy](tickets/0041-wool-coats-and-clothing-policy.md)
 - **Depends on:** M13 and M15.
 - **Scope:** add orchards with imported seeds, multiyear tree maturity, seasonal harvest, and replanting; add fenced pastures with imported breeding stock, capacity, reproduction, and slaughter controls. Begin with one fruit crop and sheep producing wool/meat; extend the tailor to warm wool coats. Require workers, land, and transport, with livestock kept distinct from stored meat or wool.
 - **Complete when:** purchased seeds establish an orchard that only yields after maturation; a breeding pair grows into a managed flock without exceeding capacity; slaughter does not silently destroy protected breeding stock. Fruit and animal products reach real storage, wool becomes clothing, and a round-trip preserves tree age, animals, and breeding progress.
 
 ### M17 — Replayable Starts & Expansion
-- **Depends on:** M15–M16.
+- 0042 — [Map seeds, climates & validated starts](tickets/0042-map-seeds-and-start-presets.md)
+- 0043 — [Constructed bridges & water crossings](tickets/0043-bridges-and-water-crossings.md)
+- 0044 — [Expansion scale & measured performance budget](tickets/0044-expansion-performance-budget.md)
+- **Depends on:** M14–M16.
 - **Scope:** expose the existing map seed and add validated mild/harsh climate presets and standard/large map sizes. Generate usable settlement land, forest, rock, and accessible trading water; add bridges for crossing water without bypassing construction costs or pathfinding. Difficulty changes starting supplies and climate pressure, not hidden production cheats. Keep the current default start available as a regression fixture.
 - **Complete when:** a documented seed set for each preset passes starting-access and resource checks; the same seed/settings reproduce terrain. Bridge construction and removal update paths without trapping the simulation. Saved worlds restore their actual terrain/settings, and an expanded town runs at a documented population and map-size target with measured frame and simulation costs.
 
 ### M18 — Settlement Identity, Guidance & Presentation
+- 0045 — [Town overview, service coverage & event history](tickets/0045-town-overview-and-event-history.md)
+- 0046 — [First-winter guidance, settlement goals & extinction](tickets/0046-guidance-goals-and-extinction.md)
+- 0047 — [Restrained ambient audio & volume controls](tickets/0047-ambient-audio-and-volume-controls.md)
 - **Depends on:** M11–M17.
 - **Scope:** add a town overview with population history, service coverage, household needs, and event history; guided first-winter objectives and optional long-term settlement goals. Add extinction feedback with restart/load choices while preserving open-ended play after goals are met. Give all new buildings distinct seasonal art, legible shortage and service indicators, and restrained ambient/production audio with volume controls. Support pause-and-inspect planning without losing alerts.
 - **Complete when:** a new player can identify a shortage, find its cause, and take corrective action without logs; objectives recognize actual simulation state rather than reward free supplies. Every new building/service is identifiable at normal zoom, sound can be muted, and a playtest covers survival, recovery, optional goals, and extinction without forcing a victory ending.
 
 ### M19 — v3 Integration & Release Gate
+- 0048 — [v3 save compatibility contract & full round-trip](tickets/0048-v3-save-contract-and-roundtrip.md)
+- 0049 — [v3 integration, balance & release gate](tickets/0049-v3-integration-balance-and-release.md)
 - **Depends on:** M11–M18; all associated tickets completed.
 - **Scope:** integrate balance, performance, documentation, and save compatibility. Decide and document whether to migrate v0.2 saves or reject them explicitly before finalizing the v3 save format; never silently reinterpret old data. Expand the existing soak and two-process round-trip tools rather than substituting manual confidence for repeatable checks.
 - **Complete when:**
