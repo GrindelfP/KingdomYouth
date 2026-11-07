@@ -73,6 +73,20 @@ func _lay_roads() -> void:
 func _do_save() -> void:
 	set_process(false)
 	Engine.time_scale = 1.0
+	var cargo_added := false
+	ResourceStockpile.add(&"firewood", 1)
+	for settler in _settlers.living_settlers():
+		if settler.is_carrying():
+			continue
+		var sources := ResourceStockpile.find_sources(&"firewood", settler.get_grid_pos())
+		if not sources.is_empty():
+			settler.set_carried(&"firewood", sources[0].storage.take(&"firewood", 1))
+			cargo_added = true
+			break
+	if not cargo_added:
+		print("ROUNDTRIP FAIL: could not prepare transit fixture")
+		get_tree().quit(1)
+		return
 	if not SaveManager.save_game():
 		print("ROUNDTRIP FAIL: save returned false")
 		get_tree().quit(1)
@@ -139,5 +153,6 @@ func _digest() -> Dictionary:
 	return {
 		"time": [TimeManager.month, snappedf(TimeManager.get_month_progress(), 0.001)],
 		"settlers": settlers, "buildings": buildings, "sites": sites, "stock": stock,
+		"town_inventory": TownInventory.snapshot(_buildings.get_buildings(), _buildings.get_sites(), _settlers.living_settlers()),
 		"trees": trees, "road_types": roads, "roads": _world.get_road_cells().size(),
 	}

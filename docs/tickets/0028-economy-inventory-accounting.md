@@ -1,6 +1,6 @@
 # 0028 — Town-wide inventory accounting
 
-- **Status:** ready
+- **Status:** done
 - **Milestone:** [M11 — Readable Economy & Long-Run Baseline](../roadmap.md#m11--readable-economy--long-run-baseline)
 - **Depends on:** 0027
 
@@ -22,11 +22,11 @@ The v0.2 HUD counts storage only; households, workplace buffers, construction de
 - Markets and production targets (0031–0032).
 
 ## Acceptance criteria
-- [ ] An independently summed fixture matches every location subtotal and town total for food and fuel.
-- [ ] Moving goods between storage, home, workplace, and settler preserves totals until actual consumption or documented loss.
-- [ ] Failed/partial deliveries, cancellation, and load do not double count goods or reservations.
-- [ ] HUD labels distinguish stored, household, transit, and total amounts without enabling global withdrawal.
-- [ ] Headless checks run without script errors; UI layout is reviewed in a windowed run.
+- [x] An independently summed fixture matches every location subtotal and town total for food and fuel.
+- [x] Moving goods between storage, home, workplace, and settler preserves totals until actual consumption or documented loss.
+- [x] Failed/partial deliveries, cancellation, and load do not double count goods or reservations.
+- [x] HUD labels distinguish stored, household, transit, and total amounts without enabling global withdrawal.
+- [x] Headless checks run without script errors; UI layout is reviewed in a windowed run.
 
 ## Open questions
 - None.

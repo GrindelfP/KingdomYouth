@@ -50,8 +50,13 @@ func _ready() -> void:
 	extra.add(&"firewood", 4)
 	data = TownInventory.snapshot(buildings, sites, settlers, {&"market": [extra]})
 	_check(data[&"market"].get(&"firewood") == 4 and data[&"total"].get(&"firewood") == 19, "separate future location")
+	settler.set_carried(&"berries", 2)
+	home.queue_free()
+	hauler._put(home.get_instance_id(), home.household, func(_n: int) -> void: pass)
+	_check(settler.carried_amount == 2, "failed delivery retains cargo")
 	for node in [store, home, work, site, settler]:
 		node.free()
+	await _check_removals()
 	print("INVENTORY %s" % ("OK" if failures == 0 else "FAIL"))
 	get_tree().quit(0 if failures == 0 else 1)
 
@@ -60,3 +65,42 @@ func _check(ok: bool, label: String) -> void:
 	if not ok:
 		failures += 1
 		push_error("Inventory check failed: " + label)
+
+
+func _check_removals() -> void:
+	var world: Node = load("res://scenes/world/world.tscn").instantiate()
+	add_child(world)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var build: BuildController = world.get_node("Buildings")
+	var people: SettlerManager = world.get_node("Settlers")
+	var def: BuildingDef = build.building_defs[build.find_def_index(&"house")]
+	var site := build.add_construction_site(def, Vector2i(2, 2), 0.0)
+	var moved := ResourceStockpile.get_storages()[0].storage.take(&"firewood", 3)
+	site.delivered.add(&"firewood", moved)
+	var before := TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers())
+	build.cancel_site(site)
+	var after := TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers())
+	_check(after[&"total"].get(&"firewood", 0) == before[&"total"].get(&"firewood", 0), "site cancellation refund")
+	var home := build.add_building(def, Vector2i(5, 5))
+	moved = ResourceStockpile.get_storages()[0].storage.take(&"firewood", 3)
+	home.household.add(&"firewood", moved)
+	before = TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers())
+	build.demolish_building(home)
+	after = TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers())
+	_check(after[&"total"].get(&"firewood", 0) == before[&"total"].get(&"firewood", 0), "demolition refund")
+	var home2 := build.add_building(def, Vector2i(8, 8))
+	home2.household.add(&"firewood", 2)
+	var stored := ResourceStockpile.get_amount(&"firewood")
+	ResourceStockpile.remove(&"firewood", stored)
+	_check(not ResourceStockpile.remove(&"firewood", 1) and home2.household.get_amount(&"firewood") == 2, "household stock is not spendable")
+	for storage in ResourceStockpile.get_storages():
+		if storage.def.accepts(&"firewood"):
+			storage.storage.add(&"firewood", storage.storage.free_space())
+	var overflow_site := build.add_construction_site(def, Vector2i(11, 11), 0.0)
+	overflow_site.delivered.add(&"firewood", 3)
+	before = TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers())
+	build.cancel_site(overflow_site)
+	after = TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers())
+	_check(int(before[&"total"].get(&"firewood", 0)) - int(after[&"total"].get(&"firewood", 0)) == 3, "full storage refund overflow loss")
+	world.queue_free()
