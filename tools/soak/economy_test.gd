@@ -62,9 +62,9 @@ func _integration() -> void:
 	var settler := people.living_settlers()[0]
 	settler.worker.cancel_task()
 	var work := build.add_building(_def(build, &"woodcutter"), Vector2i(5, 5))
-	_check(WorkplaceStatus.describe(work).begins_with("No workers"), "no-worker reason")
+	_check_status(world, work, "No workers", "no-worker reason")
 	work.desired_workers = 0
-	_check(WorkplaceStatus.describe(work).begins_with("Intentionally paused"), "intentional pause distinct")
+	_check_status(world, work, "Intentionally paused", "intentional pause distinct")
 	work.desired_workers = 1
 	settler.worker.assign(work)
 	settler.worker.resume()
@@ -75,7 +75,7 @@ func _integration() -> void:
 	work.input.take(&"logs", 1)
 	var stored_logs := ResourceStockpile.get_amount(&"logs")
 	ResourceStockpile.remove(&"logs", stored_logs)
-	_check(WorkplaceStatus.describe(work).begins_with("No input: Logs"), "no-input reason")
+	_check_status(world, work, "No input: Logs", "no-input reason")
 	ResourceStockpile.add(&"logs", stored_logs)
 	var source_building := ResourceStockpile.find_sources(&"logs", settler.get_grid_pos())[0]
 	var transfer_history := JSON.stringify(EconomyHistory.to_save_data())
@@ -87,26 +87,26 @@ func _integration() -> void:
 	for storage in ResourceStockpile.get_storages():
 		blocked.append_array(storage.get_access_cells())
 	world.set_occupied(blocked, true)
-	_check(WorkplaceStatus.describe(work).begins_with("No reachable input"), "unreachable input reason")
+	_check_status(world, work, "No reachable input", "unreachable input reason")
 	work.input.add(&"logs", 1)
 	work.output.add(&"firewood", work.output.free_space())
-	_check(WorkplaceStatus.describe(work).begins_with("No reachable destination"), "unreachable destination reason")
+	_check_status(world, work, "No reachable destination", "unreachable destination reason")
 	world.set_occupied(blocked, false)
 	for storage in ResourceStockpile.get_storages():
 		storage.storage.add(&"firewood", storage.storage.free_space())
-	_check(WorkplaceStatus.describe(work).begins_with("Full storage"), "full-storage reason")
+	_check_status(world, work, "Full storage", "full-storage reason")
 	work.output.take(&"firewood", work.output.total())
 	var access := work.get_access_cells()
 	world.set_occupied(access, true)
-	_check(WorkplaceStatus.describe(work).begins_with("No reachable work"), "unreachable-work reason")
+	_check_status(world, work, "No reachable work", "unreachable-work reason")
 	world.set_occupied(access, false)
 	settler.worker.pause()
-	_check(WorkplaceStatus.describe(work).begins_with("Paused for personal needs"), "needs pause distinct")
+	_check_status(world, work, "Paused for personal needs", "needs pause distinct")
 	settler.worker.resume()
 	var field := build.add_building(_def(build, &"crop_field_4"), Vector2i(10, 10))
 	settler.worker.assign(field)
 	TimeManager.month = 9
-	_check(WorkplaceStatus.describe(field).begins_with("Off-season"), "off-season reason")
+	_check_status(world, field, "Off-season", "off-season reason")
 	TimeManager.month = 0
 	field.field._states[0] = CropField.CellState.RIPE
 	settler.worker._action = Worker.Action.REAP
@@ -154,6 +154,12 @@ func _integration() -> void:
 	ui.process_mode = Node.PROCESS_MODE_ALWAYS
 	ui._open_shortages()
 	_check(ui._inventory_panel.visible and ui._inventory_panel._warning_buttons["food"].disabled == false, "warnings inspectable while paused")
+	ui._inventory_panel._selected_season = 0
+	ui._inventory_panel.refresh()
+	var made_cell := 6 + ResourceCatalog.all_ids().find(&"firewood") * 6 + 1
+	_check(ui._inventory_panel._season.get_selected_id() == 0 and ui._inventory_panel._table.get_child(made_cell).text == "3", "season selector displays earlier production")
+	ui._inventory_panel._selected_season = -1
+	ui._inventory_panel.refresh()
 	var paused_history := JSON.stringify(EconomyHistory.to_save_data())
 	for index in 5:
 		EconomyHistory._process(0.0)
@@ -210,6 +216,15 @@ func _integration() -> void:
 
 func _def(build: BuildController, id: StringName) -> BuildingDef:
 	return build.building_defs[build.find_def_index(id)]
+
+
+func _check_status(world: WorldGrid, building: Building, expected: String, label: String) -> void:
+	world.get_node("Jobs").focus_building(building)
+	var text := ""
+	for child in world.get_node("UI").get_child(0).get_children():
+		if child is InfoPanel:
+			text = child._content.get_child(1).text
+	_check(text.begins_with(expected), label + " in workplace panel")
 
 
 func _capture(label: String) -> void:
