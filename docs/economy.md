@@ -32,7 +32,7 @@ $G --headless --path . res://tools/soak/roundtrip.tscn -- --phase=save
 $G --headless --path . res://tools/soak/roundtrip.tscn -- --phase=load
 ```
 
-The economy test uses isolated fixtures and `user://economy_test_save.json`, never the player's save. It verifies production/use/transfers, rolling retention, actual worker/crop/crafting/heating/tool/construction/road paths, overflow loss, idle reasons, paused inspection/navigation, warning recovery/deduplication, active-warning save restoration, and additive v10 compatibility. The two-process round-trip digest includes economy history and warning state. Do not run multiple economy tests concurrently: they share their test-only save path.
+The economy test uses isolated fixtures and `user://economy_test_save.json`, never the player's save. It verifies production/use/transfers, rolling retention, actual worker/crop/crafting/heating/tool/construction/road paths, overflow loss, idle reasons, paused inspection/navigation, warning recovery/deduplication, active-warning save restoration, and additive v10 compatibility. The two-process round-trip digest includes economy history and warning state, with an employed carrier in transit. Loading binds jobs before restoring cargo so job-assignment cancellation cannot return or discard saved cargo. Do not run multiple economy tests concurrently: they share their test-only save path.
 
 For a repeatable windowed fixture at 1280x720:
 

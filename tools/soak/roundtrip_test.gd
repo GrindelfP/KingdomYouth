@@ -76,8 +76,11 @@ func _do_save() -> void:
 	var cargo_added := false
 	ResourceStockpile.add(&"firewood", 1)
 	for settler in _settlers.living_settlers():
-		if settler.is_carrying():
+		if settler.worker.building == null:
 			continue
+		if settler.is_carrying():
+			cargo_added = true
+			break
 		var sources := ResourceStockpile.find_sources(&"firewood", settler.get_grid_pos())
 		if not sources.is_empty():
 			settler.set_carried(&"firewood", sources[0].storage.take(&"firewood", 1))

@@ -172,10 +172,20 @@ func _integration() -> void:
 		await _capture("economy-workplace-review")
 	var old_path := SaveManager.save_path
 	SaveManager.save_path = "user://economy_test_save.json"
+	var cargo_source := ResourceStockpile.find_sources(&"firewood", settler.get_grid_pos())[0]
+	settler.worker._hauler._take(cargo_source.get_instance_id(), cargo_source.storage, &"firewood", 1, func(_n: int) -> void: pass)
+	var cargo_id := settler.display_id
+	var inventory_before := JSON.stringify(TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers()), "", true)
 	_check(SaveManager.save_game(), "integration save")
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(EconomyHistory.to_save_data()))
 	var count := notices.size()
 	_check(SaveManager.load_game(), "integration load")
+	var restored_carrier: Settler
+	for candidate in people.living_settlers():
+		if candidate.display_id == cargo_id:
+			restored_carrier = candidate
+	_check(restored_carrier != null and restored_carrier.worker.building != null and restored_carrier.carried_amount == 1 and restored_carrier.carried_id == &"firewood", "employed carrier keeps cargo during job restoration")
+	_check(JSON.stringify(TownInventory.snapshot(build.get_buildings(), build.get_sites(), people.living_settlers()), "", true) == inventory_before, "loading preserves every inventory location")
 	_check(JSON.stringify(saved, "", true) == JSON.stringify(EconomyHistory.to_save_data(), "", true), "persistent actual history and warning episodes")
 	EconomyHistory.refresh_shortages(build.get_buildings())
 	_check(notices.size() == count, "load does not repeat warning toast")
