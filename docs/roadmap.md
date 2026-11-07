@@ -66,13 +66,13 @@ Owner playtest feedback: keep going, but (A) no day/night cycle, only seasons; (
 
 ## v3 — A Town Worth Keeping (planned; not implemented)
 
-**Version intent:** this is the requested **v3** roadmap, not a rename to v0.3. The implemented baseline remains v0.2 (M0–M10); no intervening release or v3 feature is implied to exist. All M11–M20 below are proposed work, with no tickets allocated yet. Create and refine tickets before implementation; the scopes and completion gates here guide that breakdown, not replace it.
+**Version intent:** this is the requested **v3** roadmap, not a rename to v0.3. The implemented baseline remains v0.2 (M0–M10); no intervening release or v3 feature is implied to exist. All M11–M19 below are proposed work, with no tickets allocated yet. Create and refine tickets before implementation; the scopes and completion gates here guide that breakdown, not replace it.
 
 **Goal:** carry a vulnerable founding village into a durable, multigenerational town. Keep Banished's indirect control, scarce labor, physical goods, seasonal survival, and housing-led growth. Progress comes from surplus, trade, education, and better services, not research points, combat, or directly commanded settlers. Retain the 2D tile-grid presentation and seasons-only calendar.
 
 **Starting point:** v0.2 already has physical hauling/storage, professions, households, tools, families, seasonal fields, renewable forests, roads, demolition, and save/load. Extend these rather than rebuilding them. Known pressure points include food totals that omit household reserves and a three-year balance check too short to exercise generational replacement. The world already uses seeded terrain generation; map variety below means exposing and validating more starts, not introducing generation from nothing.
 
-**Delivery order:** M11 → M12 → M13 → M14 → M15 → M16 → M17 → M18 → M19 → M20. Dependencies below are the minimum functional prerequisites; this sequence is the preferred implementation order. Persistence, readable feedback, generated art consistent with `docs/art-style.md`, and focused regression checks belong to every milestone, not just release polish.
+**Delivery order:** M11 → M12 → M13 → M14 → M15 → M16 → M17 → M18 → M19. Dependencies below are the minimum functional prerequisites; this sequence is the preferred implementation order. Persistence, readable feedback, generated art consistent with `docs/art-style.md`, and focused regression checks belong to every milestone, not just release polish.
 
 ### M11 — Readable Economy & Long-Run Baseline
 - **Depends on:** completed M10.
@@ -104,35 +104,30 @@ Owner playtest feedback: keep going, but (A) no day/night cycle, only seasons; (
 - **Scope:** add orchards with imported seeds, multiyear tree maturity, seasonal harvest, and replanting; add fenced pastures with imported breeding stock, capacity, reproduction, and slaughter controls. Begin with one fruit crop and sheep producing wool/meat; extend the tailor to warm wool coats. Require workers, land, and transport, with livestock kept distinct from stored meat or wool.
 - **Complete when:** purchased seeds establish an orchard that only yields after maturation; a breeding pair grows into a managed flock without exceeding capacity; slaughter does not silently destroy protected breeding stock. Fruit and animal products reach real storage, wool becomes clothing, and a round-trip preserves tree age, animals, and breeding progress.
 
-### M17 — Health, Fire & Recoverable Crises
-- **Depends on:** M12–M16.
-- **Scope:** add herbalists/herbs for routine health, a staffed hospital for infectious illness, and wells with autonomous firefighting. Introduce bounded disease outbreaks and building fires with clear warnings, causes, and prevention. Famine remains the consequence of insufficient food, not an arbitrary event that deletes stocks. Offer disaster-off and normal settings; no tornadoes or additional disaster types in this milestone.
-- **Complete when:** controlled scenarios show illness spreading and treatment reducing its harm; a contained fire consumes real response labor and water access, while an unattended fire can spread. Displaced households, lost inventories, demolition, and rebuilding remain consistent. Prepared towns demonstrably recover, warnings allow a response, and loading mid-crisis neither clears nor duplicates its effects.
-
-### M18 — Replayable Starts & Expansion
-- **Depends on:** M15–M17.
+### M17 — Replayable Starts & Expansion
+- **Depends on:** M15–M16.
 - **Scope:** expose the existing map seed and add validated mild/harsh climate presets and standard/large map sizes. Generate usable settlement land, forest, rock, and accessible trading water; add bridges for crossing water without bypassing construction costs or pathfinding. Difficulty changes starting supplies and climate pressure, not hidden production cheats. Keep the current default start available as a regression fixture.
 - **Complete when:** a documented seed set for each preset passes starting-access and resource checks; the same seed/settings reproduce terrain. Bridge construction and removal update paths without trapping the simulation. Saved worlds restore their actual terrain/settings, and an expanded town runs at a documented population and map-size target with measured frame and simulation costs.
 
-### M19 — Settlement Identity, Guidance & Presentation
-- **Depends on:** M11–M18.
-- **Scope:** add a town overview with population history, service coverage, household needs, and event history; guided first-winter objectives and optional long-term settlement goals. Add extinction feedback with restart/load choices while preserving open-ended play after goals are met. Give all new buildings distinct seasonal art, legible crisis indicators, and restrained ambient/production audio with volume controls. Support pause-and-inspect planning without losing alerts.
+### M18 — Settlement Identity, Guidance & Presentation
+- **Depends on:** M11–M17.
+- **Scope:** add a town overview with population history, service coverage, household needs, and event history; guided first-winter objectives and optional long-term settlement goals. Add extinction feedback with restart/load choices while preserving open-ended play after goals are met. Give all new buildings distinct seasonal art, legible shortage and service indicators, and restrained ambient/production audio with volume controls. Support pause-and-inspect planning without losing alerts.
 - **Complete when:** a new player can identify a shortage, find its cause, and take corrective action without logs; objectives recognize actual simulation state rather than reward free supplies. Every new building/service is identifiable at normal zoom, sound can be muted, and a playtest covers survival, recovery, optional goals, and extinction without forcing a victory ending.
 
-### M20 — v3 Integration & Release Gate
-- **Depends on:** M11–M19; all associated tickets completed.
+### M19 — v3 Integration & Release Gate
+- **Depends on:** M11–M18; all associated tickets completed.
 - **Scope:** integrate balance, performance, documentation, and save compatibility. Decide and document whether to migrate v0.2 saves or reject them explicitly before finalizing the v3 save format; never silently reinterpret old data. Expand the existing soak and two-process round-trip tools rather than substituting manual confidence for repeatable checks.
 - **Complete when:**
   - A documented 30-year planned-town scenario sustains successive adult generations and exercises markets, education, trade, orchards, livestock, and services without script errors, inventory duplication, or permanently stuck settlers.
-  - Shortage, disaster-off, outbreak, and fire scenarios demonstrate both preventable failure and recovery; the no-food/no-fuel scenarios still fail for understandable survival reasons.
-  - Two-process save/load checks cover all new persistent state, including merchant visits, unlocks, students, coats, animal populations, crises, map settings, and goods in transit; older/invalid saves are migrated or rejected as documented.
-  - Default and large-map performance results meet targets fixed during M18, and an interactive playtest verifies build placement, trade confirmation, warnings, and recovery controls.
+  - Shortage scenarios demonstrate both preventable failure and recovery; the no-food/no-fuel scenarios still fail for understandable survival reasons.
+  - Two-process save/load checks cover all new persistent state, including merchant visits, unlocks, students, coats, animal populations, map settings, and goods in transit; older/invalid saves are migrated or rejected as documented.
+  - Default and large-map performance results meet targets fixed during M17, and an interactive playtest verifies build placement, trade confirmation, warnings, and shortage recovery controls.
   - `README.md`, tutorial, balance tables, roadmap status, and ticket statuses describe the shipped game. Only then mark v3 implemented.
 
-**v3 boundaries:** no combat, controllable units, research tree, currency economy, multiplayer, day/night cycle, or engine/presentation rewrite. Additional crops, animals, and disaster types wait until the first complete chains are balanced. Taverns, chapels, nomad immigration, mining depletion, and stone-house upgrades are candidates after this release, not implicit v3 commitments.
+**v3 boundaries:** no combat, controllable units, research tree, currency economy, multiplayer, day/night cycle, engine/presentation rewrite, fires, disease outbreaks, or disaster systems/settings. Ordinary food shortages, fuel shortages, and winter exposure remain core survival pressures. Additional crops and animals wait until the first complete chains are balanced. Taverns, chapels, nomad immigration, mining depletion, and stone-house upgrades are candidates after this release, not implicit v3 commitments.
 
 ## Later / stretch — original backlog (preserved)
-Originally deferred until M0–M5 formed a working loop. The list below is historical: professions, trade, disasters, map variety, sound, and optional goals now have planned v3 scope above; nothing in this list is newly implemented. Tech/research remains deferred and is not part of v3's Banished-style progression.
+Originally deferred until M0–M5 formed a working loop. The list below is historical: professions, trade, map variety, sound, and optional goals now have planned v3 scope above; nothing in this list is newly implemented. The historical disaster entry is not a v3 commitment. Tech/research remains deferred and is not part of v3's Banished-style progression.
 - Additional professions & buildings (healer, school, tailor, tavern, orchards, livestock)
 - Trading post / merchants
 - Disasters: fire, disease, famine
