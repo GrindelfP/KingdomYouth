@@ -154,5 +154,6 @@ func _digest() -> Dictionary:
 		"time": [TimeManager.month, snappedf(TimeManager.get_month_progress(), 0.001)],
 		"settlers": settlers, "buildings": buildings, "sites": sites, "stock": stock,
 		"town_inventory": TownInventory.snapshot(_buildings.get_buildings(), _buildings.get_sites(), _settlers.living_settlers()),
+		"economy": EconomyHistory.to_save_data(),
 		"trees": trees, "road_types": roads, "roads": _world.get_road_cells().size(),
 	}

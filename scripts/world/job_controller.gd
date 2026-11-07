@@ -46,6 +46,13 @@ func clear_selection() -> void:
 	selection_changed.emit()
 
 
+func focus_building(building: Building) -> void:
+	clear_selection()
+	_selected_building = building
+	_world.get_node("Camera").focus_at(building.position)
+	selection_changed.emit()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _buildings.is_placing():
 		return

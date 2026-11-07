@@ -57,6 +57,11 @@ func get_hovered_grid_pos() -> Vector2i:
 	return world_grid.world_to_grid(get_global_mouse_position())
 
 
+func focus_at(world_position: Vector2) -> void:
+	position = world_position
+	_clamp_to_bounds()
+
+
 func _clamp_to_bounds() -> void:
 	var half_view := get_viewport_rect().size / (2.0 * zoom.x)
 	position = Vector2(

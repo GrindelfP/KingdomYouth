@@ -9,7 +9,7 @@ var _settlers: SettlerManager
 var _build: BuildController
 var _labor: LaborManager
 var _content: VBoxContainer
-var _refresh_left := 0.0
+var _last_refresh := 0
 
 
 func setup(jobs: JobController, settlers: SettlerManager, build: BuildController, labor: LaborManager) -> void:
@@ -24,10 +24,9 @@ func setup(jobs: JobController, settlers: SettlerManager, build: BuildController
 	visible = false
 
 
-func _process(delta: float) -> void:
-	_refresh_left -= delta
-	if _refresh_left <= 0.0 and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		_refresh_left = REFRESH_SECONDS
+func _process(_delta: float) -> void:
+	if Time.get_ticks_msec() - _last_refresh >= REFRESH_SECONDS * 1000.0 and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_last_refresh = Time.get_ticks_msec()
 		_rebuild()
 
 
@@ -94,6 +93,7 @@ func _build_building_view(building: Building) -> void:
 	_add_title(building.def.display_name)
 	var job := building.def.job
 	if job:
+		_add_line(WorkplaceStatus.describe(building))
 		_add_line("Workers %d / %d" % [building.workers.size(), building.desired_workers])
 		_add_stepper("Desired workers: %d" % building.desired_workers,
 			func() -> void: _labor.set_desired_workers(building, building.desired_workers - 1),
@@ -117,6 +117,18 @@ func _build_building_view(building: Building) -> void:
 		_add_line("Heating: " + ("on" if building.is_heated() else "off"))
 		_add_inventory("Household", building.household)
 		_add_line("Food kinds: %d (%s)" % [building.diet_kinds(), _diet_text(building)])
+		if building.food_stock() <= EconomyHistory.food_warning_threshold:
+			_add_line("Food reserve low. Town storage: %d food." % ResourceStockpile.get_food_total())
+		if TimeManager.is_cold() and building.firewood_stock() <= EconomyHistory.fuel_warning_threshold:
+			_add_line("Fuel reserve low. Town storage: %d firewood." % ResourceStockpile.get_amount(Building.FUEL_ID))
+		if building.food_stock() <= EconomyHistory.food_warning_threshold or (TimeManager.is_cold() and building.firewood_stock() <= EconomyHistory.fuel_warning_threshold):
+			var adults := 0
+			for resident in building.residents:
+				if resident.is_working_age():
+					adults += 1
+			_add_line("Restocking: %d working-age residents. They must walk to storage and back." % adults)
+			if building.get_access_cells().is_empty():
+				_add_line("No home access: clear an adjacent path.")
 	_add_button("Close", _jobs.clear_selection)
 
 

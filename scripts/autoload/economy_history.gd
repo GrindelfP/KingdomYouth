@@ -63,7 +63,7 @@ func refresh_shortages(buildings: Array) -> void:
 		var at := [building.origin.x, building.origin.y]
 		if building.food_stock() <= food_warning_threshold:
 			next["food"].append(at)
-		if TimeManager.is_cold() and building.firewood_stock() <= fuel_warning_threshold and not building.is_heated():
+		if TimeManager.is_cold() and building.firewood_stock() <= fuel_warning_threshold:
 			next["fuel"].append(at)
 	for kind in next:
 		var started: bool = shortages[kind].is_empty() and not next[kind].is_empty()
