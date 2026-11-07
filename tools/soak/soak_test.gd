@@ -60,7 +60,7 @@ func _ready() -> void:
 	_planner = Planner.new(_world, _buildings, world.get_node("Labor"))
 	_queue_plan()
 	print("soak mode=%s years=%d random_seed=%d map_seed=%d" % [_mode, _years, _seed, WorldGrid.MAP_SEED])
-	print("year season | pop (A C E) | food firewood logs tools stone iron | stored/cap | buildings sites | house food/fw avg | avg health")
+	print("year season | pop (A C E) | stored food, stored+occupied-house fuel, stored logs tools stone iron | stored/cap | buildings sites | occupied-house food/fw sums | avg health")
 
 
 func _queue_plan() -> void:
@@ -180,6 +180,8 @@ func _log_row() -> void:
 
 
 func _finish() -> void:
+	if _last_logged != TimeManager.month:
+		_log_row()
 	_audit()
 	print("done month=%d pop=%d peak=%d min=%d first_death_month=%d extinct_month=%d frames=%d" % [
 		TimeManager.month, _settlers.population(), _peak_pop, _min_pop, _first_death_month, _population_zero_month, _frames])

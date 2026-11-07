@@ -1,6 +1,6 @@
-# Balance (v0.2)
+# Balance and survival baselines
 
-Numbers below are the final v0.2 values. Everything except the first table lives in `.tres` files or constants; the file in brackets is where to change it. A month is 60 seconds at normal speed, a year is 12 months.
+Base simulation numbers below are the final v0.2 values, unchanged by the M11 long-run baseline. Settings live in `.tres` files or constants; the file in brackets is where to change them. A month is 60 seconds at normal speed, a year is 12 months. Historical v0.2 results and the current twenty-year baseline are distinguished below.
 
 ## Time and survival constants
 
@@ -44,7 +44,7 @@ At 1 meal per settler per month the 100 starting food feeds 9 settlers for about
 
 Demolishing a building refunds half its cost.
 
-## Soak results
+## Historical v0.2 soak results
 
 Scenario: `tools/soak/soak_test.gd` on the default map (seed 1337), time scale 10, 30 fixed frames per second, random seed 1. Columns are population (total, adults, children, elders), food (stock in storage), firewood (storage and houses), logs, tools, and mean health.
 
@@ -86,10 +86,10 @@ Pop rises to 15 on the starting food, food runs out in autumn, the first death i
 ## Repeating the check
 
 ```sh
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 30 res://tools/soak/soak.tscn -- --mode=planned --years=3
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --fixed-fps 30 res://tools/soak/soak.tscn -- --mode=planned --years=20 --seed=1
 ```
 
-Modes: `planned`, `nowood`, `neglect`. A run takes about 10 seconds. The script prints one row per season and a summary with the first death month, extinction month and any settler that stood still for three-quarters of a month while travelling.
+Modes: `planned`, `nowood`, `neglect`. The current planner and checks are described below; they supersede the historical three-year scenario above. Use `--mode=nowood --years=3 --seed=1` and `--mode=neglect --years=3 --seed=1` for the lethal controls. Every run prints the terrain and simulation seeds.
 
 Save round trip across two processes:
 
@@ -101,3 +101,58 @@ $G --headless --path . res://tools/soak/roundtrip.tscn -- --phase=old
 ```
 
 The save phase builds a town for 14 months, lays roads, leaves a construction site, saves to `user://roundtrip_save.json` and writes a state digest; the load phase loads it in a fresh process and compares settlers, buildings, sites, stock, trees and roads. The `old` phase checks that a save from the previous version is rejected. Neither script touches the normal save file.
+
+## M11 twenty-year baseline (ticket 0030)
+
+Verified with Godot 4.4.1, fixed 30 FPS, time scale 10, terrain seed 1337. `--seed` selects the simulation RNG seed (initial ages, births, sex, and work randomness), not a different terrain. The default is `--years=20 --seed=1`. Month 0 is the start of Y1; month 240 is the Y21 spring boundary, after twenty complete years. Seasonal output includes children/adults/elders, workforce and profession counts, cumulative births and deaths by hunger/cold/exposure/old age, and physical food/firewood/tools in storage, households, workplaces, construction, transit, and town total.
+
+### Affordable, real-labor planner
+
+- Keep the normal starting settlers, inventories, stockpile, and barn. No instant completion, recurring supplies, direct movement, or extra settlers. All later buildings use `BuildController.try_place`, delivered materials, and actual builder work. Placement subtracts outstanding site commitments before testing affordability and keeps access margins around buildings.
+- Queue three houses, forester, gatherer, 6x6 field, woodcutter; then quarry (month 8+), mine (10+), blacksmith (12+), hunter (14+). These are earliest dates, not promises: seed 1 actually places the woodcutter at month 9, quarry at 16, mine at 26, blacksmith at 30, and hunter at 39. Initial 80 logs only fund three houses, forester, and gatherer; later costs depend on real logging.
+- Manage about once per simulated second. Reserve one builder and at least one laborer; never request more production workers than the remaining working-age population. Priority: forester, woodcutter, gatherer, hunter, blacksmith, mine, quarry, field. Request one worker per building except two farmers. Winter releases gatherers/farmers. Unused capacity remains laborers, which can haul and supply households; jobs are not assigned to children.
+- Pause logging above 120 stored logs and fuel cutting above 120 stored firewood. Pause smithing at 20 stored tools, mining at 20 iron, quarrying at 40 stone. Resume below those cutoffs. Batch output and goods in transit can overshoot. These are test-planner staffing decisions, not a new production-limit game feature. They prevent logs from monopolizing storage and release scarce workers for food and replacement tools.
+- Once the initial queue and active sites finish, add a house when a settler aged 16+ is homeless or still with parents, provided there is no empty house. Empty houses allow singles to leave parents and unrelated couples to form. Otherwise expand barns only above 75% of food-accepting storage capacity, not merely when food exceeds a fixed amount. Every expansion still waits for affordable logs/stone and construction labor.
+- `nowood` uses the same rules but omits the woodcutter. `neglect` builds only three houses and leaves starting professions unchanged. Neither control deletes the initial supplies.
+
+### Failures found and resolved
+
+Extending the unchanged three-year planner to twenty years **failed**: first death at month 93, extinction at 107, six hunger and nine cold deaths, no successor households. Tools ran out in Y5, the fixed job requests consumed the workforce before later workshops could be staffed, and the barn at the head of the expansion queue could not obtain stone. By extinction, 600 stored food and logs clogging material storage did not constitute a functioning survival economy. There were no frozen-travel reports.
+
+The first labor-budget revision passed seed 1, but seed 2 lost a whole five-person household to hunger at month 38 while industry outranked hunting. Moving hunting ahead of smithing/mining/quarrying removed those deaths on rerun. A provisional fixed-food expansion trigger also built excessive barns (14,800 total storage); the capacity-relative trigger reduced seed 1 to 2,800 total storage. **No game production, aging, fertility, hunger, heating, tool-wear, or movement constants changed.** The correction is feasible town planning and staffing, not hidden balance assistance.
+
+### Measured final outcomes
+
+All final runs returned `VERDICT: PASS`, with zero script errors, zero unexplained inventory differences, zero travel stalls, and no skipped placements. Initial population is nine in every run.
+
+| Run | Final population (children/adults/elders) | Births | Grew up / observed working | Successor members / households | Hunger / cold deaths | Town food / fuel / tools |
+| --- | --- | --- | --- | --- | --- | --- |
+| 20 years, seed 1 | 28 (12/16/0) | 19 | 10 / 10 | 4 / 2 | 0 / 0 | 1447 / 106 / 21 |
+| 20 years, seed 2 | 30 (15/15/0) | 21 | 9 / 9 | 4 / 2 | 0 / 0 | 1455 / 102 / 20 |
+| 20 years, seed 3 | 36 (20/16/0) | 27 | 10 / 9 | 8 / 4 | 0 / 0 | 1498 / 128 / 23 |
+| No fuel, seed 1 (month 36) | 0 | 6 | 0 / 0 | 0 / 0 | 0 / 15 | 45 / 0 / 16 |
+| Neglect, seed 1 (month 11) | 0 | 6 | 0 / 0 | 0 / 0 | 15 / 0 | 0 / 12 / 10 |
+
+No exposure or old-age deaths occurred. No-fuel deaths all occur in month 23, with food still physically present. Neglect first kills through hunger in month 9 and reaches extinction in month 11. Controls passing means their expected failure was observed, not that their towns survived.
+
+Selected seasonal checkpoints for seed 1 (all resources are **town-wide**, unlike the historical table):
+
+| Elapsed years | Population C/A/E | Births | Grew / worked | Successor households | Food | Firewood | Tools |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | 3/6/0 | 0 | 0/0 | 0 | 100 | 40 | 12 |
+| 1 | 9/6/0 | 6 | 0/0 | 0 | 74 | 16 | 7 |
+| 3 | 8/7/0 | 6 | 1/0 | 0 | 32 | 145 | 11 |
+| 5 | 6/9/0 | 6 | 3/1 | 0 | 221 | 145 | 20 |
+| 10 | 7/9/0 | 7 | 3/3 | 0 | 949 | 145 | 23 |
+| 15 | 6/15/0 | 12 | 9/8 | 1 | 1369 | 146 | 21 |
+| 20 | 12/16/0 | 19 | 10/10 | 2 | 1447 | 106 | 21 |
+
+At the final seed-1 checkpoint: food = 1248 stored + 194 household + 5 workplace; fuel = 100 household + 6 carried; tools = 21 stored. Storage alone reports zero fuel but the town is not out. The town has 23 completed buildings and no sites; ten houses include singles/parents as well as successor couples. Seed 1 was rerun with **byte-identical complete console output** (SHA-256 `08107bc603f4f4fdbbd36fb949e0b7f0126d5e5ec849ae243f499b3de906c5d7`). Existing focused tests report `INVENTORY OK`, `ECONOMY OK`; the two-process save test reports `ROUNDTRIP OK` (0/10 digest sections differ), and the older-save rejection check passes.
+
+### What the gate checks, and its limits
+
+- Each season reconciles every good against initial physical stock plus recorded production/imports minus consumption/exports/losses. Internal transfers must conserve town totals. Known discards are explicit `lost` flows, not unexplained disappearance. Initial accounting begins after the normal deferred bootstrap has supplied the starting inventories.
+- Sample travel every 20 simulated seconds. A travel/pickup/delivery/return state, or actual movement, that remains in the same grid cell for more than 90 simulated seconds without a needs pause is a failed stall. Work/build and legitimate idle time are excluded. Long idle workplaces print their off-season/input/storage/access reason; the reserve labor pool is explicitly labeled. A season-boundary `Ready` message can precede the next normal worker retry and is not stalled travel.
+- A 20-year planned run fails on extinction, any hunger/cold/exposure death, no observed child-cohort work, no successor household, an inventory discrepancy, or a travel stall. Shorter planned runs do not require successor evidence. Controls require extinction and at least one death from their expected cause, plus clean accounting/travel. Exit status is 0 for pass, 1 for a failed gate, 2 for invalid mode/year arguments.
+- `grew` counts crossing working age (10); `worked` counts those settlers subsequently observed doing actual work/building. Successor members retain parent references, have a partner and home, and no longer live with parents; households count distinct home origins over the run. These are cumulative test observations, not new persistent gameplay statistics.
+- This is a default-map, scripted-planning baseline, not proof that every player plan or seed survives. All three checked simulation seeds survive without deaths, but the first winter remains tight. No founding settler reaches elder age in twenty years (starts at 18–35, elder at 60); zero elders/old-age deaths are expected, **not** proof of elder replacement. This does not satisfy the 30-year release gate (0049), large-map performance, future services, or arbitrary map seeds. The existing save check still covers its original 14-month scenario, not a 20-year save/resume.
