@@ -1,6 +1,6 @@
 # 0030 — Twenty-year survival & demographic baseline
 
-- **Status:** ready
+- **Status:** in-progress
 - **Milestone:** [M11 — Readable Economy & Long-Run Baseline](../roadmap.md#m11--readable-economy--long-run-baseline)
 - **Depends on:** 0028, 0029
 
@@ -22,11 +22,13 @@ The current three-year soak does not establish generational replacement. Extend 
 - Claiming 20 years proves the final 30-year release gate (0049).
 
 ## Acceptance criteria
-- [ ] The documented command reproduces a 20-year run with seed and seasonal demographic/economy output.
-- [ ] The planned town demonstrates children entering work and forming successor households; any survival blockers are resolved and rerun.
-- [ ] No script errors, unexplained inventory changes, or permanently stuck settlers remain.
-- [ ] No-food/no-fuel controls still fail for observable hunger/cold reasons.
-- [ ] Baseline balance, planner rules, limitations, and results are recorded.
+- [x] The documented command reproduces a 20-year run with seed and seasonal demographic/economy output.
+- [x] The planned town demonstrates children entering work and forming successor households; any survival blockers are resolved and rerun.
+- [x] No script errors, unexplained inventory changes, or permanently stuck settlers remain.
+- [x] No-food/no-fuel controls still fail for observable hunger/cold reasons.
+- [x] Baseline balance, planner rules, limitations, and results are recorded.
+
+Implementation and headless verification are complete on the development branch; status remains `in-progress` until merged, per the ticket lifecycle. See [measured results, resolved failures, and limitations](../balance.md#m11-twenty-year-baseline-ticket-0030). Seeds 1/2/3 survive twenty years without deaths; the controls die of hunger/cold. No game balance constants changed. This is not the 30-year release gate.
 
 ## Open questions
 - None; adjust affordable planner rules and measured balance rather than masking failures.
