@@ -12,6 +12,7 @@ func _start() -> void:
 		SaveManager.load_game()
 		return
 	var buildings: BuildController = get_parent().get_node("Buildings")
+	EconomyHistory.reset()
 	var settlers: SettlerManager = get_parent().get_node("Settlers")
 	var occupied: Array[Vector2i] = []
 	for settler in settlers.living_settlers():

@@ -266,7 +266,7 @@ func _update_heating(dt: float) -> void:
 			continue
 		house.heat_left = maxf(house.heat_left - dt, 0.0)
 		if not house.is_heated() and house.residents.size() > 0:
-			if house.household.take(Building.FUEL_ID, FUEL_PER_HEATING) > 0:
+			if house.household.consume(Building.FUEL_ID, FUEL_PER_HEATING) > 0:
 				house.heat_left = HEAT_DURATION
 
 

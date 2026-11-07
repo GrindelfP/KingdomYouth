@@ -524,7 +524,7 @@ func _return_carried() -> void:
 	elif building and building.output:
 		left -= building.output.add(id, left)
 	if left > 0:
-		ResourceStockpile.add(id, left)
+		ResourceStockpile.return_goods(id, left)
 	_settler.set_carried(&"", 0)
 
 
@@ -564,6 +564,7 @@ func _on_restock_delivered(_accepted: int) -> void:
 
 func _on_tool_taken(taken: int) -> void:
 	if taken > 0:
+		EconomyHistory.record("consumed", Building.TOOL_ID, taken)
 		_settler.set_carried(&"", 0)
 		_settler.equip_tool()
 	_state = State.IDLE
@@ -679,7 +680,7 @@ func _finish_work() -> void:
 		return
 	for entry in job.outputs:
 		if randf() <= float(entry["chance"]):
-			building.output.add(StringName(entry["id"]), int(entry["amount"]))
+			building.output.produce(StringName(entry["id"]), int(entry["amount"]))
 
 
 func _finish_field_work(job: JobDef) -> void:
@@ -696,5 +697,5 @@ func _finish_field_work(job: JobDef) -> void:
 			field.sow(_field_cell)
 		Action.REAP:
 			if field.reap(_field_cell):
-				building.output.add(field.crop, int(job.outputs[0]["amount"]))
+				building.output.produce(field.crop, int(job.outputs[0]["amount"]))
 	_release_field_claim()

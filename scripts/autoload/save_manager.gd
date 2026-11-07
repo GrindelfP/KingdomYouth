@@ -22,6 +22,7 @@ func save_game() -> bool:
 		"terrain": world.to_save_data(),
 		"buildings": world.get_node("Buildings").to_save_data(),
 		"settlers": world.get_node("Settlers").to_save_data(),
+		"economy": EconomyHistory.to_save_data(),
 	}
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
@@ -59,12 +60,14 @@ func load_game() -> bool:
 	world.from_save_data(parsed["terrain"])
 	buildings.from_save_data(parsed["buildings"])
 	settlers.from_save_data(parsed["settlers"], buildings)
+	EconomyHistory.from_save_data(parsed.get("economy", {}))
 	return true
 
 
 func start_new_game() -> void:
 	ResourceStockpile.reset()
 	TimeManager.reset()
+	EconomyHistory.reset()
 	pending_load = false
 	get_tree().reload_current_scene()
 

@@ -18,6 +18,7 @@ config/features=PackedStringArray("4.4", "Forward Plus")
 
 ResourceStockpile="*res://scripts/autoload/resource_stockpile.gd"
 TimeManager="*res://scripts/autoload/time_manager.gd"
+EconomyHistory="*res://scripts/autoload/economy_history.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
 
 

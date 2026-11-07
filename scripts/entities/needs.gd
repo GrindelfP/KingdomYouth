@@ -65,7 +65,7 @@ func try_eat() -> bool:
 
 
 func eat_from(source: Inventory) -> bool:
-	if source.take_best(ResourceDef.Category.FOOD, FOOD_PER_MEAL) < FOOD_PER_MEAL:
+	if source.take_best(ResourceDef.Category.FOOD, FOOD_PER_MEAL, true) < FOOD_PER_MEAL:
 		return false
 	hunger = maxf(hunger - MEAL_RESTORE, 0.0)
 	return true

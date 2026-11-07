@@ -289,9 +289,11 @@ func demolish_building(building: Building) -> void:
 		if inventory == null:
 			continue
 		for id in inventory.ids():
-			ResourceStockpile.add(id, inventory.take(id, inventory.get_amount(id)))
+			ResourceStockpile.return_goods(id, inventory.take(id, inventory.get_amount(id)))
 	for id in building.def.cost:
-		ResourceStockpile.add(id, int(building.def.cost[id]) / 2)
+		var recovered := int(building.def.cost[id]) / 2
+		EconomyHistory.record("produced", id, recovered)
+		ResourceStockpile.return_goods(id, recovered)
 	building.queue_free()
 	notice.emit("Demolished %s. Half of its cost was returned to storage." % building.def.display_name)
 

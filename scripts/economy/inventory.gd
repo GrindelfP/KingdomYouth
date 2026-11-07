@@ -58,6 +58,19 @@ func take(id: StringName, amount: int) -> int:
 	return taken
 
 
+func produce(id: StringName, amount: int) -> int:
+	var accepted := add(id, amount)
+	EconomyHistory.record("produced", id, amount)
+	EconomyHistory.record("lost", id, amount - accepted)
+	return accepted
+
+
+func consume(id: StringName, amount: int) -> int:
+	var taken := take(id, amount)
+	EconomyHistory.record("consumed", id, taken)
+	return taken
+
+
 func category_total(category: ResourceDef.Category) -> int:
 	var sum := 0
 	for id in ResourceCatalog.ids_in_category(category):
@@ -73,7 +86,7 @@ func kind_count(category: ResourceDef.Category) -> int:
 	return count
 
 
-func take_best(category: ResourceDef.Category, amount: int) -> int:
+func take_best(category: ResourceDef.Category, amount: int, consumption := false) -> int:
 	var taken := 0
 	while taken < amount:
 		var best := &""
@@ -82,7 +95,7 @@ func take_best(category: ResourceDef.Category, amount: int) -> int:
 				best = id
 		if best == &"":
 			break
-		taken += take(best, 1)
+		taken += consume(best, 1) if consumption else take(best, 1)
 	return taken
 
 
